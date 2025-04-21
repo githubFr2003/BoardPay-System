@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BoardPaySystem.Models // Use your actual project namespace
 {
+    //ssdsd
     public class LoginViewModel
     {
         [Required(ErrorMessage = "Username is required.")] // Add error messages

@@ -13,7 +13,7 @@ namespace BoardPaySystem.Controllers
             return View();
         }
         public IActionResult Billing()
-        {
+        {//sss
             return View();
         }
         public IActionResult AddTenant()
