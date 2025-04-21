@@ -1,0 +1,24 @@
+﻿@{
+    ViewData["Title"] = "Add New Tenant";
+    Layout = "_LandlordLayout";
+}
+
+<h3><i class="fas fa-user-plus"></i> Add New Tenant</h3>
+<p style="color: #555; font-style: italic;">Tenant will inherit default Rent, Water, and WiFi fees from the selected building. These can be overridden later.</p>
+<form id="add-tenant-form">
+    @* @Html.AntiForgeryToken() *@
+    <div class="form-grid">
+        <div class="form-group"><label for="tenant-building">Assign to Building</label><select id="tenant-building" required><option value="" disabled selected>-- Select Building --</option><option value="Sunshine Apartments">Sunshine Apartments (Rent: ₱2700, Water: ₱100, WiFi: ₱200)</option><option value="Moonlight Dorm">Moonlight Dorm (Rent: ₱3000, Water: ₱150, WiFi: ₱250)</option></select></div>
+        <div class="form-group"></div>
+        <div class="form-group"><label for="tenant-fname">First Name</label><input type="text" id="tenant-fname" required></div>
+        <div class="form-group"><label for="tenant-lname">Last Name</label><input type="text" id="tenant-lname" required></div>
+        <div class="form-group"><label for="tenant-email">Email</label><input type="email" id="tenant-email" required></div>
+        <div class="form-group"><label for="tenant-phone">Phone Number (for SMS)</label><input type="text" id="tenant-phone" placeholder="e.g., 0917xxxxxxx" required></div>
+        <div class="form-group"><label for="tenant-password">Temporary Password</label><input type="password" id="tenant-password" required></div>
+        <div class="form-group"><label for="tenant-room">Room Number</label><input type="text" id="tenant-room" required></div>
+        @* Rent, Water, WiFi inputs are REMOVED from here *@
+    </div>
+    <button type="submit">Add Tenant</button>
+    <a asp-action="ManageTenants" asp-controller="Landlord" class="btn-secondary">Cancel</a>
+    <p id="add-tenant-message" class="message success"></p>
+</form>

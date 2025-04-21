@@ -1,0 +1,27 @@
+﻿@{
+    ViewData["Title"] = "Enter Meter Readings";
+    Layout = "_LandlordLayout";
+}
+
+<h3><i class="fas fa-bolt"></i> Enter Meter Readings</h3>
+<form id="meter-reading-form">
+    @* @Html.AntiForgeryToken() *@
+    <div class="form-grid">
+        <div class="form-group"><label for="reading-tenant">Select Tenant</label><select id="reading-tenant" required><option value="" disabled selected>-- Choose Tenant --</option><option value="1">Juan Dela Cruz (Sunshine - 101)</option><option value="2">Maria Clara (Sunshine - 102)</option><option value="3">Crisostomo Ibarra (Moonlight - A1)</option></select></div>
+        <div class="form-group"><label for="reading-date">Reading Date</label><input type="date" id="reading-date" required></div>
+        <div class="form-group"><label for="reading-usage">Electricity Usage (kWh)</label><input type="number" id="reading-usage" step="0.01" placeholder="e.g., 55.75" required></div>
+    </div>
+    <button type="submit">Record Reading</button>
+    <p id="add-reading-message" class="message success"></p>
+</form>
+
+<h4 class="mt-30">Recent Readings</h4>
+<table>
+    <thead><tr><th>Tenant</th><th>Building</th><th>Date</th><th>Usage (kWh)</th></tr></thead>
+    <tbody>
+        @* Replace with Model data *@
+        <tr><td>Juan Dela Cruz</td><td>Sunshine Apartments</td><td>2023-10-31</td><td>52.50</td></tr>
+        <tr><td>Maria Clara</td><td>Sunshine Apartments</td><td>2023-10-31</td><td>48.20</td></tr>
+        <tr><td>Crisostomo Ibarra</td><td>Moonlight Dorm</td><td>2023-10-31</td><td>61.00</td></tr>
+    </tbody>
+</table>

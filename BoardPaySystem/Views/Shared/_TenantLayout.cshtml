@@ -1,0 +1,41 @@
+﻿@{
+    Layout = "_Layout";
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "Bills";
+    var notificationCount = 1; // Replace with actual count from Model/ViewBag later
+}
+
+<div class="app-container">
+    <div id="tenant-dashboard" class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h2><i class="fas fa-user"></i> Tenant</h2>
+            <nav>
+                <ul>
+                    <li><a asp-action="Bills" asp-controller="Tenant" class="nav-link @(currentAction == "Bills" ? "active" : "")"><i class="fas fa-file-invoice"></i> My Bills</a></li>
+                    <li><a asp-action="Payment" asp-controller="Tenant" class="nav-link @(currentAction == "Payment" ? "active" : "")"><i class="fas fa-credit-card"></i> Payment Options</a></li>
+                    <li><a asp-action="History" asp-controller="Tenant" class="nav-link @(currentAction == "History" ? "active" : "")"><i class="fas fa-history"></i> Usage History</a></li>
+                    <li><a asp-action="Profile" asp-controller="Tenant" class="nav-link @(currentAction == "Profile" ? "active" : "")"><i class="fas fa-id-card"></i> My Profile</a></li>
+                    <li>
+                        <a asp-action="Notifications" asp-controller="Tenant" class="nav-link @(currentAction == "Notifications" ? "active" : "")">
+                            <i class="fas fa-bell"></i> Notifications
+                            @if (notificationCount > 0)
+                            {
+                                <span class="badge">@notificationCount</span>
+                            }
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="logout-button">
+                <button class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            @RenderBody() @* Content from Bills.cshtml, Payment.cshtml etc. goes here *@
+        </main>
+
+        @* Add Tenant-specific modals here if needed globally *@
+    </div>
+</div>

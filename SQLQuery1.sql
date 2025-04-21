@@ -1,0 +1,1 @@
+﻿INSERT INTO users (firstName, lastName, username, phone, password, roleID) VALUES ('FROILAN JAY', 'CABERTE', 'admin', '09482399150', 'admin123', 1);

@@ -1,0 +1,22 @@
+﻿@{
+    ViewData["Title"] = "Billing & Payments";
+    Layout = "_LandlordLayout";
+}
+
+<h3><i class="fas fa-file-invoice-dollar"></i> Billing & Payments</h3>
+<div class="filter-bar">
+    <label for="filter-billing-building">Building:</label><select id="filter-billing-building"><option value="all">All Buildings</option><option value="Sunshine Apartments">Sunshine Apartments</option><option value="Moonlight Dorm">Moonlight Dorm</option></select>
+    <label for="filter-billing-month">Month:</label><input type="month" id="filter-billing-month" value="2023-11">
+    <button class="btn-success btn-small">Generate Bills</button> @* Server action needed *@
+</div>
+
+<table>
+    <thead><tr><th>Tenant</th><th>Building</th><th>Billing Month</th><th>Total Bill</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>
+        @* Replace with Model data *@
+        <tr><td>Juan Dela Cruz</td><td>Sunshine Apartments</td><td>Nov 2023</td><td>₱3787.50</td><td>2023-11-15</td><td><span class="status status-pending">Pending</span></td><td><button class="btn-success btn-small">Mark Paid</button> <button class="btn-secondary btn-small">View Bill</button></td></tr>
+        <tr><td>Maria Clara</td><td>Sunshine Apartments</td><td>Nov 2023</td><td>₱3843.00</td><td>2023-11-15</td><td><span class="status status-pending">Pending</span></td><td><button class="btn-success btn-small">Mark Paid</button> <button class="btn-secondary btn-small">View Bill</button></td></tr>
+        <tr><td>Crisostomo Ibarra</td><td>Moonlight Dorm</td><td>Nov 2023</td><td>₱4415.00</td><td>2023-11-15</td><td><span class="status status-paid">Paid</span></td><td><button class="btn-secondary btn-small">View Bill</button></td></tr>
+        <tr><td>Juan Dela Cruz</td><td>Sunshine Apartments</td><td>Oct 2023</td><td>₱3787.50</td><td>2023-10-15</td><td><span class="status status-paid">Paid</span></td><td><button class="btn-secondary btn-small">View Bill</button></td></tr>
+    </tbody>
+</table>
