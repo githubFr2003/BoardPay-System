@@ -1,6 +1,32 @@
 ﻿// wwwroot/js/site.js
 
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Mobile Menu Functionality ---
+    window.toggleMobileMenu = () => {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.querySelector('.mobile-menu-overlay');
+        const body = document.body;
+
+        if (sidebar && overlay) {
+            sidebar.classList.toggle('active');
+            overlay.style.display = sidebar.classList.contains('active') ? 'block' : 'none';
+            body.classList.toggle('menu-open');
+        }
+    };
+
+    // Close mobile menu when clicking outside
+    const overlay = document.querySelector('.mobile-menu-overlay');
+    if (overlay) {
+        overlay.addEventListener('click', () => {
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar) {
+                sidebar.classList.remove('active');
+                overlay.style.display = 'none';
+                document.body.classList.remove('menu-open');
+            }
+        });
+    }
+
     // --- Element References ---
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
@@ -20,13 +46,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const gcashBtn = document.querySelector('#tenant-dashboard #t-payment button.btn-success'); // Assumes Tenant dashboard view exists
     const gcashMessage = document.getElementById('gcash-message');
 
-    // --- Helper: Show Message ---
-    // This can still be useful for client-side validation messages before submit,
-    // or potentially displaying messages returned from the server if you implement AJAX later.
+    // --- Helper Functions ---
     function showMessage(element, text, type = 'success', duration = 3000) {
         if (!element) return;
         element.textContent = text;
-        element.className = `message ${type}`; // Reset classes
+        element.className = `alert alert-${type}`;
         element.style.display = 'block';
         if (duration > 0) {
             if (element.timeoutId) clearTimeout(element.timeoutId);
@@ -36,37 +60,34 @@ document.addEventListener('DOMContentLoaded', () => {
             }, duration);
         }
     }
-    window.showMessage = showMessage; // Make global if needed elsewhere
+    window.showMessage = showMessage;
 
+    // --- Form Validations ---
+    function validateForm(form) {
+        let isValid = true;
+        const requiredFields = form.querySelectorAll('[required]');
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                isValid = false;
+                field.classList.add('is-invalid');
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        return isValid;
+    }
 
     // --- Login Form Handling ---
     if (loginForm) {
         loginForm.addEventListener('submit', (e) => {
-            // REMOVED: e.preventDefault();
-            // Let the form submit to the server via standard POST.
-
-            // Client-side validation can still happen BEFORE the submit occurs.
             if (loginError) loginError.style.display = 'none';
-
-            const usernameInput = document.getElementById('username'); // Use specific ID if needed
-            const passwordInput = document.getElementById('password');
-            const roleSelect = document.getElementById('role');
-
-            const username = usernameInput?.value;
-            const password = passwordInput?.value;
-            const role = roleSelect?.value;
-
-            // Basic client-side check: Ensure fields are not empty before allowing submit.
-            if (!username || !password || !role) {
-                // Prevent submission ONLY if basic client validation fails.
+            
+            if (!validateForm(loginForm)) {
                 e.preventDefault();
-                if (loginError) showMessage(loginError, "Please fill in all fields.", 'error', 0);
-                return; // Stop further execution
+                showMessage(loginError, "Please fill in all required fields.", 'danger', 0);
             }
-
-            // The actual login logic, credential validation, and redirection
-            // will now be handled by the server-side AccountController.Login POST action.
-            // The JS simulation logic (checking role, window.location.href) is removed.
         });
     }
 
@@ -96,38 +117,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // Building Form Submission
     if (buildingForm) {
         buildingForm.addEventListener('submit', (e) => {
-            // REMOVED: e.preventDefault();
-            // Let the form submit to the server.
-            // Server-side action (e.g., LandlordController.ManageBuildings [HttpPost]
-            // or LandlordController.AddBuilding [HttpPost]) will handle saving.
-            // Success/error messages should be handled by the server response
-            // (e.g., using TempData and displaying it in the view).
-            // REMOVED: showMessage(buildingFormMessage, ...) simulation.
-            // REMOVED: console.log simulation.
+            if (!validateForm(buildingForm)) {
+                e.preventDefault();
+                showMessage(buildingFormMessage, "Please fill in all required fields.", 'danger', 0);
+            }
         });
     }
 
     // Add Tenant Form Submission
     if (addTenantForm) {
         addTenantForm.addEventListener('submit', (e) => {
-            // REMOVED: e.preventDefault();
-            // Let the form submit to the server (e.g., LandlordController.AddTenant [HttpPost]).
-            // Server handles saving and success/error messages.
-            // REMOVED: showMessage(addTenantMessage, ...) simulation.
-            // REMOVED: console.log simulation.
-            // REMOVED: addTenantForm.reset(); // Server redirect/response handles state
+            if (!validateForm(addTenantForm)) {
+                e.preventDefault();
+                showMessage(addTenantMessage, "Please fill in all required fields.", 'danger', 0);
+            }
         });
     }
 
     // Meter Reading Form Submission
     if (meterReadingForm) {
         meterReadingForm.addEventListener('submit', (e) => {
-            // REMOVED: e.preventDefault();
-            // Let the form submit to the server (e.g., LandlordController.MeterReadings [HttpPost]).
-            // Server handles saving and success/error messages.
-            // REMOVED: showMessage(addReadingMessage, ...) simulation.
-            // REMOVED: console.log simulation.
-            // REMOVED: meterReadingForm.reset(); // Server redirect/response handles state
+            if (!validateForm(meterReadingForm)) {
+                e.preventDefault();
+                showMessage(addReadingMessage, "Please fill in all required fields.", 'danger', 0);
+            }
         });
     }
 
@@ -180,14 +193,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fee Update Form Submission (Inside Modal)
     if (updateFeesForm) {
         updateFeesForm.addEventListener('submit', (e) => {
-            // REMOVED: e.preventDefault();
-            // Let the form submit to the server (e.g., LandlordController.UpdateTenantFees [HttpPost]).
-            // The hidden input 'update-fees-tenant-id' will carry the tenant ID.
-            // Server handles saving, notification logic, and success/error messages.
-            // REMOVED: showMessage(updateFeesMessage, ...) simulation.
-            // REMOVED: console.log simulation.
-            // Modal closing might be handled server-side (redirect) or you could
-            // add JS to close it based on server feedback if using AJAX later.
+            if (!validateForm(updateFeesForm)) {
+                e.preventDefault();
+                showMessage(updateFeesMessage, "Please fill in all required fields.", 'danger', 0);
+            }
         });
     }
 
@@ -195,14 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // GCash Button click (assuming this INITIATES something, might need AJAX or form post later)
     if (gcashBtn) {
         gcashBtn.addEventListener('click', () => {
-            // This button is NOT submitting a form in the original code.
-            // If it SHOULD submit a form to initiate payment server-side,
-            // change the button to type="submit" and wrap it in a form.
-            // If it triggers a client-side SDK or redirects, the JS is needed.
-            // Keeping simulation for now, replace with actual logic.
-            showMessage(gcashMessage, 'GCash payment initiated (simulation).');
-            console.log("Simulating GCash payment initiation");
-            // ** REAL APP: Replace with actual payment initiation logic (e.g., redirect, SDK call) **
+            showMessage(gcashMessage, 'Processing GCash payment...', 'info');
         });
     }
 

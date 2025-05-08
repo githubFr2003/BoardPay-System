@@ -20,6 +20,7 @@ C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\d
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\js\site.js
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.min.css
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\favicon.ico
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\css\responsive.css
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\dist\css\bootstrap.css
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.css.map
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css
@@ -40,6 +41,7 @@ C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\d
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\dist\js\bootstrap.esm.js
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.css
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\jquery-validation\dist\jquery.validate.js
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\jquery\jquery.min.js
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.min.css
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.js.map
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\jquery-validation\dist\additional-methods.js
@@ -60,6 +62,7 @@ C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\d
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\jquery-validation-unobtrusive\dist\jquery.validate.unobtrusive.js
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\dist\css\bootstrap.min.css.map
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.css
+wwwroot\css\responsive.css
 wwwroot\css\site.css
 wwwroot\favicon.ico
 wwwroot\js\site.js
@@ -114,6 +117,7 @@ wwwroot\lib\jquery\dist\jquery.min.map
 wwwroot\lib\jquery\dist\jquery.slim.js
 wwwroot\lib\jquery\dist\jquery.slim.min.js
 wwwroot\lib\jquery\dist\jquery.slim.min.map
+wwwroot\lib\jquery\jquery.min.js
 wwwroot\lib\jquery\LICENSE.txt
 wwwroot\lib\jquery-validation\dist\additional-methods.js
 wwwroot\lib\jquery-validation\dist\additional-methods.min.js

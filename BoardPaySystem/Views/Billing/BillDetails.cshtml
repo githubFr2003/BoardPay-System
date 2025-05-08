@@ -1,0 +1,190 @@
+@model BoardPaySystem.Models.Bill
+@{
+    ViewData["Title"] = "Bill Details";
+    Layout = "_LandlordLayout";
+    var payments = ViewBag.Payments as List<BoardPaySystem.Models.Payment> ?? new List<BoardPaySystem.Models.Payment>();
+    decimal totalPaid = payments.Sum(p => p.Amount);
+    decimal remainingBalance = Model.TotalAmount - totalPaid;
+}
+
+<div class="content-section">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="page-title mb-0">
+            <i class="fas fa-file-invoice"></i>
+            Bill Details
+        </h3>
+        <div>
+            <a asp-action="Bills" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Bills
+            </a>
+            <a asp-action="RecordPayment" asp-route-id="@Model.BillId" class="btn btn-primary ms-2">
+                <i class="fas fa-money-bill-wave"></i> Record Payment
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Bill Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Tenant:</strong> @(Model.Tenant?.FirstName) @(Model.Tenant?.LastName)</p>
+                            <p><strong>Room:</strong> @(Model.Room?.RoomNumber)</p>
+                            <p><strong>Billing Date:</strong> @(Model.BillingDate.ToString("MMMM d, yyyy"))</p>
+                            <p><strong>Due Date:</strong> @(Model.DueDate.ToString("MMMM d, yyyy"))</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> <span class="badge bg-@GetStatusClass(Model.Status)">@Model.Status</span></p>
+                            <p><strong>Total Amount:</strong> @(Model.TotalAmount.ToString("C"))</p>
+                            <p><strong>Amount Paid:</strong> @(totalPaid.ToString("C"))</p>
+                            <p><strong>Remaining Balance:</strong> @(remainingBalance.ToString("C"))</p>
+                        </div>
+                    </div>
+                    <hr />
+                    <h6 class="fw-bold">Charges Breakdown</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <td>Monthly Rent</td>
+                                    <td class="text-end">@Model.MonthlyRent.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td>Water Fee</td>
+                                    <td class="text-end">@Model.WaterFee.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td>Electricity Fee</td>
+                                    <td class="text-end">@Model.ElectricityFee.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td>WiFi Fee</td>
+                                    <td class="text-end">@Model.WifiFee.ToString("C")</td>
+                                </tr>
+                                @if (Model.LateFee.HasValue && Model.LateFee.Value > 0)
+                                {
+                                    <tr>
+                                        <td>Late Fee</td>
+                                        <td class="text-end">@Model.LateFee.Value.ToString("C")</td>
+                                    </tr>
+                                }
+                                @if (Model.OtherFees.HasValue && Model.OtherFees.Value > 0)
+                                {
+                                    <tr>
+                                        <td>Other Fees @(!string.IsNullOrEmpty(Model.OtherFeesDescription) ? $"({Model.OtherFeesDescription})" : "")</td>
+                                        <td class="text-end">@Model.OtherFees.Value.ToString("C")</td>
+                                    </tr>
+                                }
+                                <tr class="fw-bold">
+                                    <td>Total</td>
+                                    <td class="text-end">@Model.TotalAmount.ToString("C")</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            @if (Model.Status == BoardPaySystem.Models.BillStatus.Pending && Model.DueDate < DateTime.Now)
+            {
+                <form asp-action="UpdateBillStatuses" method="post">
+                    <button type="submit" class="btn btn-warning mb-4">
+                        <i class="fas fa-exclamation-circle"></i> Mark Overdue Bills
+                    </button>
+                </form>
+            }
+        </div>
+
+        <div class="col-md-5">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Payment History</h5>
+                </div>
+                <div class="card-body">
+                    @if (payments.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Amount</th>
+                                        <th>Reference</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var payment in payments)
+                                    {
+                                        <tr>
+                                            <td>@payment.PaymentDate.ToString("MM/dd/yyyy")</td>
+                                            <td>@payment.Amount.ToString("C")</td>
+                                            <td>@payment.ReferenceNumber</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr class="fw-bold">
+                                        <td>Total</td>
+                                        <td colspan="2">@totalPaid.ToString("C")</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i> No payments recorded yet.
+                        </div>
+                    }
+                </div>
+            </div>
+            
+            @if (Model.Notes != null)
+            {
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Notes</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>@Model.Notes</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    string GetStatusClass(BoardPaySystem.Models.BillStatus status)
+    {
+        return status switch
+        {
+            BoardPaySystem.Models.BillStatus.Paid => "success",
+            BoardPaySystem.Models.BillStatus.Pending => "warning",
+            BoardPaySystem.Models.BillStatus.Overdue => "danger",
+            BoardPaySystem.Models.BillStatus.Cancelled => "secondary",
+            _ => "secondary"
+        };
+    }
+}

@@ -1,0 +1,109 @@
+﻿
+@{
+    ViewData["Title"] = "My Profile";
+    Layout = "_LandlordLayout";
+}
+
+<h3><i class="fas fa-user-shield"></i> My Profile</h3>
+
+<div class="info-card">
+    <h4>Personal Information</h4>
+    @* Replace with Model data *@
+    <p><strong>Name:</strong> J. Reyes</p>
+    <p><strong>Email:</strong> j.reyes@email.com</p>
+    <p><strong>Contact Number:</strong> 0917-XXX-XXXX</p>
+    <p><strong>Role:</strong> Property Manager</p>
+</div>
+
+<div class="info-card">
+    <h4>Account Settings</h4>
+    <div class="mt-20">
+        <button class="btn-secondary" onclick="showChangePasswordForm()">Change Password</button>
+        <button class="btn-secondary" onclick="showUpdateProfileForm()">Update Profile</button>
+    </div>
+</div>
+
+@* Change Password Form (hidden initially) *@
+<div id="change-password-form" class="modal-form" style="display:none;">
+    <form id="password-form">
+        @* @Html.AntiForgeryToken() *@
+        <h4>Change Password</h4>
+        <div class="form-group">
+            <label for="current-password">Current Password</label>
+            <input type="password" id="current-password" required>
+        </div>
+        <div class="form-group">
+            <label for="new-password">New Password</label>
+            <input type="password" id="new-password" required>
+        </div>
+        <div class="form-group">
+            <label for="confirm-password">Confirm New Password</label>
+            <input type="password" id="confirm-password" required>
+        </div>
+        <button type="submit">Update Password</button>
+        <button type="button" class="btn-secondary" onclick="hideChangePasswordForm()">Cancel</button>
+        <p id="password-message" class="message"></p>
+    </form>
+</div>
+
+@* Update Profile Form (hidden initially) *@
+<div id="update-profile-form" class="modal-form" style="display:none;">
+    <form id="profile-form">
+        @* @Html.AntiForgeryToken() *@
+        <h4>Update Profile</h4>
+        <div class="form-group">
+            <label for="profile-name">Name</label>
+            <input type="text" id="profile-name" value="J. Reyes" required>
+        </div>
+        <div class="form-group">
+            <label for="profile-email">Email</label>
+            <input type="email" id="profile-email" value="j.reyes@email.com" required>
+        </div>
+        <div class="form-group">
+            <label for="profile-phone">Contact Number</label>
+            <input type="tel" id="profile-phone" value="0917-XXX-XXXX" required>
+        </div>
+        <button type="submit">Save Changes</button>
+        <button type="button" class="btn-secondary" onclick="hideUpdateProfileForm()">Cancel</button>
+        <p id="profile-message" class="message"></p>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        function showChangePasswordForm() {
+            document.getElementById('change-password-form').style.display = 'block';
+        }
+
+        function hideChangePasswordForm() {
+            document.getElementById('change-password-form').style.display = 'none';
+        }
+
+        function showUpdateProfileForm() {
+            document.getElementById('update-profile-form').style.display = 'block';
+        }
+
+        function hideUpdateProfileForm() {
+            document.getElementById('update-profile-form').style.display = 'none';
+        }
+
+        // Form submission handlers
+        document.getElementById('password-form')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const msgElement = document.getElementById('password-message');
+            if (typeof showMessage === 'function') {
+                showMessage(msgElement, 'Password updated successfully.');
+                hideChangePasswordForm();
+            }
+        });
+
+        document.getElementById('profile-form')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const msgElement = document.getElementById('profile-message');
+            if (typeof showMessage === 'function') {
+                showMessage(msgElement, 'Profile updated successfully.');
+                hideUpdateProfileForm();
+            }
+        });
+    </script>
+}

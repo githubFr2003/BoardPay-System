@@ -1,41 +1,62 @@
 ﻿@{
     Layout = "_Layout";
-    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "Bills";
-    var notificationCount = 1; // Replace with actual count from Model/ViewBag later
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
 }
 
 <div class="app-container">
     <div id="tenant-dashboard" class="dashboard">
+        <!-- Mobile Menu Toggle -->
+        <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+            <i class="fas fa-bars"></i>
+        </button>
+
         <!-- Sidebar -->
         <aside class="sidebar">
             <h2><i class="fas fa-user"></i> Tenant</h2>
             <nav>
                 <ul>
-                    <li><a asp-action="Bills" asp-controller="Tenant" class="nav-link @(currentAction == "Bills" ? "active" : "")"><i class="fas fa-file-invoice"></i> My Bills</a></li>
-                    <li><a asp-action="Payment" asp-controller="Tenant" class="nav-link @(currentAction == "Payment" ? "active" : "")"><i class="fas fa-credit-card"></i> Payment Options</a></li>
-                    <li><a asp-action="History" asp-controller="Tenant" class="nav-link @(currentAction == "History" ? "active" : "")"><i class="fas fa-history"></i> Usage History</a></li>
-                    <li><a asp-action="Profile" asp-controller="Tenant" class="nav-link @(currentAction == "Profile" ? "active" : "")"><i class="fas fa-id-card"></i> My Profile</a></li>
-                    <li>
-                        <a asp-action="Notifications" asp-controller="Tenant" class="nav-link @(currentAction == "Notifications" ? "active" : "")">
-                            <i class="fas fa-bell"></i> Notifications
-                            @if (notificationCount > 0)
-                            {
-                                <span class="badge">@notificationCount</span>
-                            }
-                        </a>
-                    </li>
+                    <li><a asp-action="Bills" asp-controller="Tenant" class="nav-link @(currentAction == "Bills" ? "active" : "")"><i class="fas fa-file-invoice-dollar"></i> My Bills</a></li>
+                    <li><a asp-action="Payment" asp-controller="Tenant" class="nav-link @(currentAction == "Payment" ? "active" : "")"><i class="fas fa-money-bill-wave"></i> Payment Options</a></li>
+                    <li><a asp-action="History" asp-controller="Tenant" class="nav-link @(currentAction == "History" ? "active" : "")"><i class="fas fa-history"></i> Payment History</a></li>
+                    <li><a asp-action="Profile" asp-controller="Tenant" class="nav-link @(currentAction == "Profile" ? "active" : "")"><i class="fas fa-user-circle"></i> My Profile</a></li>
+                    <li><a asp-action="Notifications" asp-controller="Tenant" class="nav-link @(currentAction == "Notifications" ? "active" : "")"><i class="fas fa-bell"></i> Notifications</a></li>
                 </ul>
             </nav>
             <div class="logout-button">
-                <button class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-danger">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </button>
+                </form>
             </div>
         </aside>
 
-        <!-- Main Content Area -->
+        <!-- Main Content Area - Rendered by Specific Views -->
         <main class="main-content">
-            @RenderBody() @* Content from Bills.cshtml, Payment.cshtml etc. goes here *@
+            @RenderBody()
         </main>
-
-        @* Add Tenant-specific modals here if needed globally *@
     </div>
 </div>
+
+@RenderSection("Scripts", required: false)
+
+<script>
+    // Toggle mobile menu
+    function toggleMobileMenu() {
+        document.querySelector('.sidebar').classList.toggle('mobile-visible');
+    }
+
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', function(e) {
+        const sidebar = document.querySelector('.sidebar');
+        const mobileToggle = document.querySelector('.mobile-menu-toggle');
+        
+        if (sidebar.classList.contains('mobile-visible') && 
+            !sidebar.contains(e.target) && 
+            e.target !== mobileToggle) {
+            sidebar.classList.remove('mobile-visible');
+        }
+    });
+</script>

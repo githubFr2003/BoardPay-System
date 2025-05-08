@@ -1,22 +1,412 @@
-﻿@{
+﻿@model IEnumerable<BoardPaySystem.Models.Bill>
+@{
     ViewData["Title"] = "Billing & Payments";
     Layout = "_LandlordLayout";
+    var currentMonth = DateTime.Now.Month;
+    var currentYear = DateTime.Now.Year;
 }
 
-<h3><i class="fas fa-file-invoice-dollar"></i> Billing & Payments</h3>
-<div class="filter-bar">
-    <label for="filter-billing-building">Building:</label><select id="filter-billing-building"><option value="all">All Buildings</option><option value="Sunshine Apartments">Sunshine Apartments</option><option value="Moonlight Dorm">Moonlight Dorm</option></select>
-    <label for="filter-billing-month">Month:</label><input type="month" id="filter-billing-month" value="2023-11">
-    <button class="btn-success btn-small">Generate Bills</button> @* Server action needed *@
+<div class="content-section">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="page-title mb-0">
+            <i class="fas fa-file-invoice-dollar"></i>
+            Billing & Payments
+        </h3>
+        <div>
+            <form method="post" action="@Url.Action("GenerateBills", "Billing")" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-success me-2">
+                    <i class="fas fa-plus-circle"></i> Generate Bills
+                </button>
+            </form>
+            <form method="post" action="@Url.Action("UpdateBillStatuses", "Billing")" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-warning">
+                    <i class="fas fa-exclamation-circle"></i> Update Overdue Status
+                </button>
+            </form>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row mb-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="filter-building" class="form-label">Building:</label>
+                    <select id="filter-building" class="form-select">
+                        <option value="all" selected>All Buildings</option>
+                        @foreach (var building in ViewBag.Buildings ?? new List<BoardPaySystem.Models.Building>())
+                        {
+                            <option value="@building.BuildingId">@building.BuildingName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-status" class="form-label">Status:</label>
+                    <select id="filter-status" class="form-select">
+                        <option value="all" selected>All Statuses</option>
+                        <option value="notpaid">Not Paid Yet</option>
+                        <option value="pending">Payment Pending</option>
+                        <option value="overdue">Overdue</option>
+                        <option value="paid">Paid</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-month" class="form-label">Month:</label>
+                    <select id="filter-month" class="form-select">
+                        <option value="all">All Months</option>
+                        <option value="@($"{currentYear}-{currentMonth:D2}")" selected>Current Month</option>
+                        @for (int i = 1; i <= 12; i++)
+                        {
+                            <option value="@($"{currentYear}-{i:D2}")">@(new DateTime(currentYear, i, 1).ToString("MMMM yyyy"))</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button id="btn-unpaid-only" class="btn btn-outline-info">
+                        <i class="fas fa-filter"></i> Unpaid
+                    </button>
+                    <button id="btn-clear-filter" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i> No bills found. Click "Generate Bills" to create bills based on tenant billing cycles.
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="bills-table">
+                        <thead>
+                            <tr>
+                                <th>Tenant</th>
+                                <th>Building</th>
+                                <th>Room</th>
+                                <th>Billing Month</th>
+                                <th>Due Date</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var bill in Model)
+                            {
+                                var buildingId = bill.Room?.Floor?.Building?.BuildingId ?? 0;
+                                var buildingName = bill.Room?.Floor?.Building?.BuildingName ?? "Unknown";
+                                
+                                <tr data-building-id="@buildingId" 
+                                    data-status="@bill.Status.ToString().ToLower()" 
+                                    data-month="@bill.BillingDate.ToString("yyyy-MM")"
+                                    class="@GetRowClass(bill)">
+                                    <td>
+                                        <div>
+                                            <span class="fw-medium">@(bill.Tenant?.FirstName) @(bill.Tenant?.LastName)</span>
+                                            @if (!string.IsNullOrEmpty(bill.Tenant?.PhoneNumber))
+                                            {
+                                                <div class="text-muted small">
+                                                    <i class="fas fa-phone-alt"></i> @bill.Tenant.PhoneNumber
+                                                </div>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>@buildingName</td>
+                                    <td>@(bill.Room?.RoomNumber ?? "Unknown")</td>
+                                    <td>@bill.BillingDate.ToString("MMMM yyyy")</td>
+                                    <td>
+                                        @bill.DueDate.ToString("MM/dd/yyyy")
+                                        @if (bill.DueDate < DateTime.Now && bill.Status != BoardPaySystem.Models.BillStatus.Paid)
+                                        {
+                                            <div class="text-danger small">
+                                                <i class="fas fa-exclamation-circle"></i> 
+                                                @(Math.Floor((DateTime.Now - bill.DueDate).TotalDays)) days overdue
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>@bill.TotalAmount.ToString("C")</td>
+                                    <td>
+                                        <span class="badge bg-@GetStatusClass(bill.Status)">
+                                            @GetStatusText(bill.Status)
+                                        </span>
+                                        @if (bill.PaymentDate.HasValue)
+                                        {
+                                            <div class="text-muted small">
+                                                Paid on @bill.PaymentDate.Value.ToString("MM/dd/yyyy")
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            @if (bill.Status != BoardPaySystem.Models.BillStatus.Paid)
+                                            {
+                                                @if (bill.Status == BoardPaySystem.Models.BillStatus.Pending)
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-success approve-payment-btn" 
+                                                            data-bill-id="@bill.BillId" 
+                                                            data-tenant-name="@(bill.Tenant?.FirstName) @(bill.Tenant?.LastName)"
+                                                            data-amount="@bill.TotalAmount"
+                                                            data-payment-ref="@bill.PaymentReference">
+                                                        <i class="fas fa-check"></i> Approve GCash
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-success mark-paid-btn" 
+                                                            data-bill-id="@bill.BillId" 
+                                                            data-tenant-name="@(bill.Tenant?.FirstName) @(bill.Tenant?.LastName)"
+                                                            data-amount="@bill.TotalAmount">
+                                                        <i class="fas fa-money-bill-wave"></i> Mark as Paid
+                                                    </button>
+                                                }
+                                            }
+                                            <a href="@Url.Action("BillDetails", "Billing", new { id = bill.BillId })" class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye"></i> Details
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
-<table>
-    <thead><tr><th>Tenant</th><th>Building</th><th>Billing Month</th><th>Total Bill</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody>
-        @* Replace with Model data *@
-        <tr><td>Juan Dela Cruz</td><td>Sunshine Apartments</td><td>Nov 2023</td><td>₱3787.50</td><td>2023-11-15</td><td><span class="status status-pending">Pending</span></td><td><button class="btn-success btn-small">Mark Paid</button> <button class="btn-secondary btn-small">View Bill</button></td></tr>
-        <tr><td>Maria Clara</td><td>Sunshine Apartments</td><td>Nov 2023</td><td>₱3843.00</td><td>2023-11-15</td><td><span class="status status-pending">Pending</span></td><td><button class="btn-success btn-small">Mark Paid</button> <button class="btn-secondary btn-small">View Bill</button></td></tr>
-        <tr><td>Crisostomo Ibarra</td><td>Moonlight Dorm</td><td>Nov 2023</td><td>₱4415.00</td><td>2023-11-15</td><td><span class="status status-paid">Paid</span></td><td><button class="btn-secondary btn-small">View Bill</button></td></tr>
-        <tr><td>Juan Dela Cruz</td><td>Sunshine Apartments</td><td>Oct 2023</td><td>₱3787.50</td><td>2023-10-15</td><td><span class="status status-paid">Paid</span></td><td><button class="btn-secondary btn-small">View Bill</button></td></tr>
-    </tbody>
-</table>
+<!-- Payment Approval Modal -->
+<div class="modal fade" id="approvePaymentModal" tabindex="-1" aria-labelledby="approvePaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="approvePaymentModalLabel">Approve GCash Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="approvePaymentForm" method="post" action="@Url.Action("ApprovePayment", "Billing")">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" id="billId" name="billId" />
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Confirming GCash payment for <strong id="tenantNameSpan"></strong>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">GCash Reference</label>
+                        <input type="text" id="paymentRefDisplay" class="form-control" readonly />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Payment Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₱</span>
+                            <input type="number" id="amount" name="amount" class="form-control" step="0.01" min="0.01" required />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check-circle"></i> Confirm Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Mark as Paid Modal -->
+<div class="modal fade" id="markPaidModal" tabindex="-1" aria-labelledby="markPaidModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="markPaidModalLabel">Mark as Paid</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="markPaidForm" method="post" action="@Url.Action("RecordPayment", "Billing")">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" id="paidBillId" name="billId" />
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Recording in-person payment for <strong id="paidTenantNameSpan"></strong>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="paidAmount" class="form-label">Payment Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₱</span>
+                            <input type="number" id="paidAmount" name="amount" class="form-control" step="0.01" min="0.01" required />
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="paymentReference" class="form-label">Receipt/Reference Number</label>
+                        <input type="text" id="paymentReference" name="paymentReference" class="form-control" 
+                               placeholder="e.g., Receipt #12345" required />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="paymentNotes" class="form-label">Notes</label>
+                        <textarea id="paymentNotes" name="notes" class="form-control" rows="2"
+                                  placeholder="Any additional payment information..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check-circle"></i> Record Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Approve GCash payment button click
+            $('.approve-payment-btn').click(function() {
+                const billId = $(this).data('bill-id');
+                const tenantName = $(this).data('tenant-name');
+                const amount = $(this).data('amount');
+                const paymentRef = $(this).data('payment-ref');
+                
+                $('#billId').val(billId);
+                $('#tenantNameSpan').text(tenantName);
+                $('#amount').val(amount);
+                $('#paymentRefDisplay').val(paymentRef);
+                
+                // Show the modal
+                const approvePaymentModal = new bootstrap.Modal(document.getElementById('approvePaymentModal'));
+                approvePaymentModal.show();
+            });
+            
+            // Mark as Paid button click
+            $('.mark-paid-btn').click(function() {
+                const billId = $(this).data('bill-id');
+                const tenantName = $(this).data('tenant-name');
+                const amount = $(this).data('amount');
+                
+                $('#paidBillId').val(billId);
+                $('#paidTenantNameSpan').text(tenantName);
+                $('#paidAmount').val(amount);
+                
+                // Show the modal
+                const markPaidModal = new bootstrap.Modal(document.getElementById('markPaidModal'));
+                markPaidModal.show();
+            });
+            
+            // Filter functions
+            function applyFilters() {
+                const buildingFilter = $('#filter-building').val();
+                const statusFilter = $('#filter-status').val();
+                const monthFilter = $('#filter-month').val();
+                
+                $('#bills-table tbody tr').each(function() {
+                    const $row = $(this);
+                    const buildingId = $row.data('building-id').toString();
+                    const status = $row.data('status');
+                    const month = $row.data('month');
+                    
+                    const showByBuilding = (buildingFilter === 'all' || buildingId === buildingFilter);
+                    const showByStatus = (statusFilter === 'all' || status === statusFilter);
+                    const showByMonth = (monthFilter === 'all' || month === monthFilter);
+                    
+                    if (showByBuilding && showByStatus && showByMonth) {
+                        $row.show();
+                    } else {
+                        $row.hide();
+                    }
+                });
+            }
+            
+            // Filter event handlers
+            $('#filter-building, #filter-status, #filter-month').on('change', function() {
+                applyFilters();
+            });
+            
+            // Show only unpaid button
+            $('#btn-unpaid-only').click(function() {
+                $('#filter-status').val('notpaid');
+                applyFilters();
+            });
+            
+            // Clear filters button
+            $('#btn-clear-filter').click(function() {
+                $('#filter-building').val('all');
+                $('#filter-status').val('all');
+                $('#filter-month').val('all');
+                applyFilters();
+            });
+        });
+    </script>
+}
+
+@functions {
+    string GetStatusClass(BillStatus status)
+    {
+        return status switch
+        {
+            BillStatus.NotPaid => "info",
+            BillStatus.Paid => "success",
+            BillStatus.Pending => "warning",
+            BillStatus.Overdue => "danger",
+            BillStatus.Cancelled => "secondary",
+            _ => "secondary"
+        };
+    }
+    
+    string GetRowClass(Bill bill)
+    {
+        return bill.Status switch
+        {
+            BillStatus.NotPaid => "table-info",
+            BillStatus.Pending => "table-warning",
+            BillStatus.Overdue => "table-danger",
+            _ => ""
+        };
+    }
+    
+    string GetStatusText(BillStatus status)
+    {
+        return status switch
+        {
+            BillStatus.NotPaid => "Not Paid Yet",
+            BillStatus.Paid => "Paid",
+            BillStatus.Pending => "Payment Pending",
+            BillStatus.Overdue => "Overdue",
+            BillStatus.Cancelled => "Cancelled",
+            _ => status.ToString()
+        };
+    }
+}

@@ -1,3 +1,7 @@
 ﻿@{
-    Layout = "_Layout";
+    // Use _AuthLayout for Home/Index, otherwise use _Layout
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+
+    Layout = (controller == "Home" && action == "Index") ? "_AuthLayout" : "_Layout";
 }

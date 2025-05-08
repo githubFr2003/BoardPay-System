@@ -1,139 +1,166 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using BoardPaySystem.Models;
-using BoardPaySystem.Services;
-using Microsoft.AspNetCore.Identity;
+using System.Threading.Tasks;
 
 // Required for Cookie Authentication
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using System.Threading.Tasks; // Required for async actions
 
+namespace BoardPaySystem.Controllers
+{
 public class AccountController : Controller
 {
-    private readonly ApplicationDBContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
 
-    public AccountController(ApplicationDBContext context)
+        public AccountController(
+            UserManager<ApplicationUser> userManager,
+            SignInManager<ApplicationUser> signInManager,
+            RoleManager<IdentityRole> roleManager)
     {
-        _context = context;
+            _userManager = userManager;
+            _signInManager = signInManager;
+            _roleManager = roleManager;
     }
 
     [HttpGet]
-    public IActionResult Login()
+        public async Task<IActionResult> CreateLandlord()
     {
-        // If user is already logged in, redirect them away from login page
-        if (User.Identity.IsAuthenticated)
-        {
-            // Optional: Redirect based on existing role, or just to a default page
-            if (User.IsInRole("Landlord")) return RedirectToAction("Overview", "Landlord");
-            if (User.IsInRole("Tenant")) return RedirectToAction("Bills", "Tenant"); // Assuming Tenant controller exists
-            return RedirectToAction("Index", "Home"); // Fallback
-        }
-        return View(new LoginViewModel
-        {
-            Username = string.Empty, // Initialize with default values
-            Password = string.Empty,
-            Role = string.Empty
-        }); // Pass initialized model to avoid null reference on initial load
+            // Check if landlord already exists
+            var landlords = await _userManager.GetUsersInRoleAsync("Landlord");
+            if (landlords.Any())
+            {
+                return RedirectToAction("Login");
+            }
+
+            // Check if landlord role exists
+            if (!await _roleManager.RoleExistsAsync("Landlord"))
+            {
+                // Create landlord role
+                await _roleManager.CreateAsync(new IdentityRole("Landlord"));
+            }
+
+            // Check if tenant role exists
+            if (!await _roleManager.RoleExistsAsync("Tenant"))
+            {
+                // Create tenant role
+                await _roleManager.CreateAsync(new IdentityRole("Tenant"));
+            }
+
+            return View(new RegisterViewModel());
     }
 
     [HttpPost]
-    [ValidateAntiForgeryToken]
-    // Make the method async Task<IActionResult> to use await
-    public async Task<IActionResult> Login(LoginViewModel model) // Role from dropdown is now in the model
+        public async Task<IActionResult> CreateLandlord(RegisterViewModel model)
     {
-        // Check if the model state is valid (based on annotations like [Required])
-        if (!ModelState.IsValid)
+            // Check if landlord already exists
+            var landlords = await _userManager.GetUsersInRoleAsync("Landlord");
+            if (landlords.Any())
+            {
+                return RedirectToAction("Login");
+            }
+
+            if (ModelState.IsValid)
         {
-            // If not valid, return the view with the model to display validation errors
+                var user = new ApplicationUser
+                {
+                    UserName = model.Username,
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    PhoneNumber = model.PhoneNumber
+                };
+
+                var result = await _userManager.CreateAsync(user, model.Password);
+
+                if (result.Succeeded)
+                {
+                    await _userManager.AddToRoleAsync(user, "Landlord");
+                    TempData["Success"] = "Landlord account created successfully. Please log in.";
+                    return RedirectToAction("Login");
+                }
+
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+            }
+
             return View(model);
         }
 
-        // --- Find User ---
-        // Include the Role navigation property to check the role name
-        var user = await _context.users
-            .Include(u => u.Role) // Eager load the Role data
-            .FirstOrDefaultAsync(u => u.username == model.Username);
-
-        // --- Validate Credentials ---
-        // 1. Check if user exists
-        // 2. !!! SECURITY WARNING: PLAIN TEXT PASSWORD CHECK - REPLACE WITH HASHING ASAP !!!
-        // 3. Check if the stored Role name matches the selected Role (case-insensitive)
-        if (user != null && user.password == model.Password && user.Role != null && user.Role.Name.Equals(model.Role, StringComparison.OrdinalIgnoreCase))
+        [HttpGet]
+        public async Task<IActionResult> Login()
         {
-            // --- Credentials Valid - Create Authentication Cookie ---
-
-            // Create claims (pieces of information about the user)
-            var claims = new List<Claim>
+            // If user is already logged in, redirect to appropriate page
+            if (User?.Identity?.IsAuthenticated ?? false)
             {
-                new Claim(ClaimTypes.Name, user.username), // Standard claim for username
-                new Claim(ClaimTypes.NameIdentifier, user.userID.ToString()), // Standard claim for user ID
-                new Claim(ClaimTypes.Role, user.Role.Name) // Standard claim for role
-                // Add other claims if needed (e.g., email, first name)
-            };
-
-            // Create identity based on claims
-            var claimsIdentity = new ClaimsIdentity(
-                claims, CookieAuthenticationDefaults.AuthenticationScheme);
-
-            // Create principal (represents the user)
-            var authPrincipal = new ClaimsPrincipal(claimsIdentity);
-
-            // Define authentication properties (optional, e.g., for persistence)
-            var authProperties = new AuthenticationProperties
-            {
-                // Allow the session to be persisted across browser closes (optional)
-                // IsPersistent = true,
-
-                // Redirect URL after successful login (can be overridden below)
-                // RedirectUri = <string>
-
-                // ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(60) // Can override scheme default
-            };
-
-            // Sign the user in, creating the authentication cookie
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                authPrincipal,
-                authProperties);
-
-            // --- Redirect based on Role ---
-            if (user.Role.Name.Equals("Landlord", StringComparison.OrdinalIgnoreCase))
-            {
-                return RedirectToAction("Overview", "Landlord");
+                var user = await _userManager.GetUserAsync(User);
+                if (user != null)
+        {
+                    var isLandlord = await _userManager.IsInRoleAsync(user, "Landlord");
+                    return RedirectToAction("Index", isLandlord ? "Landlord" : "Tenant");
+                }
             }
-            else if (user.Role.Name.Equals("Tenant", StringComparison.OrdinalIgnoreCase))
+
+            // Check if landlord exists, if not redirect to create landlord
+            var landlords = await _userManager.GetUsersInRoleAsync("Landlord");
+            if (!landlords.Any())
             {
-                // Assuming you have a Tenant controller and Bills action
-                return RedirectToAction("Bills", "Tenant");
+                return RedirectToAction("CreateLandlord");
             }
-            else
+
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Login(LoginViewModel model)
+        {
+            if (ModelState.IsValid)
             {
-                // Fallback redirect if role is neither Landlord nor Tenant (or handle error)
+                var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, model.RememberMe, lockoutOnFailure: false);
+
+                if (result.Succeeded)
+                {
+                    var user = await _userManager.FindByNameAsync(model.Username);
+                    if (user == null)
+                    {
+                        ModelState.AddModelError(string.Empty, "User not found.");
                 return RedirectToAction("Index", "Home");
             }
+
+                    if (await _userManager.IsInRoleAsync(user, "Landlord"))
+                    {
+                        return RedirectToAction("Overview", "Landlord");
+                    }
+                    else if (await _userManager.IsInRoleAsync(user, "Tenant"))
+                    {
+                        return RedirectToAction("Index", "Tenant");
         }
         else
         {
-            // --- Credentials Invalid ---
-            // Add a model error to display a general message on the login page
-            ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-            ViewBag.LoginError = "Invalid username, password, or role."; // Or use ViewBag as before
-            return View(model); // Return the view with the model and error message
-        }
-    }
+                        await _signInManager.SignOutAsync();
+                        ModelState.AddModelError(string.Empty, "User has no assigned role.");
+                        return RedirectToAction("Index", "Home");
+                    }
+                }
 
-    // --- Add Logout Action ---
+            ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+            }
+
+            // If we got this far, something failed, redisplay form
+            TempData["Error"] = "Invalid login attempt. Please check your username and password.";
+            return RedirectToAction("Index", "Home");
+        }
+
     [HttpPost]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
-        // Clear the existing external cookie
-        await HttpContext.SignOutAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme);
-
-        return RedirectToAction("Index", "Home"); // Redirect to home/login page after logout
+            await _signInManager.SignOutAsync();
+            return RedirectToAction("Index", "Home");
     }
 
     // --- Optional: Access Denied Action ---
@@ -141,6 +168,7 @@ public class AccountController : Controller
     public IActionResult AccessDenied()
     {
         return View(); // Create a simple AccessDenied.cshtml view if needed
+        }
     }
 }
 

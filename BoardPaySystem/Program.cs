@@ -1,64 +1,95 @@
-    using BoardPaySystem.Services;
-    using Microsoft.EntityFrameworkCore;
-    using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using BoardPaySystem.Models;
+using BoardPaySystem.Services;
 
-    var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
-    // Add services to the container.
-    builder.Services.AddControllersWithViews();
+// Add services to the container.
+builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages(); // Add this for Identity UI pages
 
-    builder.Services.AddDbContext<ApplicationDBContext>(options => {
-        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-        options.UseSqlServer(connectionString);
-    }
-    );
+// Configure database
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-    // ****************************************
-    // ***** ADD AUTHENTICATION SERVICES ******
-    // ****************************************
-    builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-        .AddCookie(options =>
-        {
-            options.ExpireTimeSpan = TimeSpan.FromMinutes(60); // Set cookie duration (e.g., 60 minutes)
-            options.SlidingExpiration = true; // Renew cookie on user activity
-            options.LoginPath = "/Home/Index"; // Redirect here if authentication is required
-            options.LogoutPath = "/Home/Logout"; // Path for logout process
-            options.AccessDeniedPath = "/Home/AccessDenied"; // Optional: Path if authorized but lacks role/policy permission
-        });
-    // ****************************************
-    // ********** END ADDED SECTION ***********
-    // ****************************************
+// Configure Identity
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequiredLength = 8;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
 
-    var app = builder.Build();
+// Configure cookie settings
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/";
+    options.LogoutPath = "/Account/Logout";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+});
 
-    // Configure the HTTP request pipeline.
-    if (!app.Environment.IsDevelopment())
+// Add role initialization service
+builder.Services.AddScoped<IRoleInitializer, RoleInitializer>();
+
+// Add billing service
+builder.Services.AddScoped<IBillingService, BillingService>();
+
+// Add meter reading service
+builder.Services.AddScoped<IMeterReadingService, MeterReadingService>();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+app.UseStaticFiles(); // Serves files from wwwroot
+app.UseRouting();
+// ****************************************
+// ***** ADD AUTHENTICATION MIDDLEWARE ****
+// ***** ORDER MATTERS: Before AuthZ *****
+// ****************************************
+app.UseAuthentication(); // Determines *who* the user is (reads the cookie)
+// ****************************************
+// ********** END ADDED SECTION ***********
+// ****************************************
+
+app.UseAuthorization();
+
+// Initialize roles
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
     {
-        app.UseExceptionHandler("/Home/Error");
-        // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-        app.UseHsts();
+        var roleInitializer = services.GetRequiredService<IRoleInitializer>();
+        await roleInitializer.InitializeAsync();
     }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while initializing roles.");
+    }
+}
 
-    app.UseHttpsRedirection();
-    app.UseStaticFiles(); // Serves files from wwwroot
-    app.UseRouting();
-    // ****************************************
-    // ***** ADD AUTHENTICATION MIDDLEWARE ****
-    // ***** ORDER MATTERS: Before AuthZ *****
-    // ****************************************
-    app.UseAuthentication(); // Determines *who* the user is (reads the cookie)
-    // ****************************************
-    // ********** END ADDED SECTION ***********
-    // ****************************************
+app.MapStaticAssets();
 
-    app.UseAuthorization();
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}")
+    .WithStaticAssets();
 
-    app.MapStaticAssets();
+app.MapRazorPages(); // Add this for Identity UI pages
 
-    app.MapControllerRoute(
-        name: "default",
-        pattern: "{controller=Home}/{action=Index}/{id?}")
-        .WithStaticAssets();
+app.Run();
 
-
-    app.Run();

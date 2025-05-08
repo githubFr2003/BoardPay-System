@@ -1,0 +1,85 @@
+@model BoardPaySystem.Models.Bill
+@{
+    ViewData["Title"] = "Create Bill";
+    Layout = "_LandlordLayout";
+    var tenants = ViewBag.Tenants as List<BoardPaySystem.Models.ApplicationUser> ?? new List<BoardPaySystem.Models.ApplicationUser>();
+    var rooms = ViewBag.Rooms as List<BoardPaySystem.Models.Room> ?? new List<BoardPaySystem.Models.Room>();
+}
+
+<div class="content-section">
+    <div class="d-flex align-items-center mb-4">
+        <h3 class="page-title mb-0">
+            <i class="fas fa-plus"></i>
+            Create Bill
+        </h3>
+    </div>
+    <form asp-action="CreateBill" method="post">
+        <div class="mb-3">
+            <label for="TenantId" class="form-label">Tenant</label>
+            <select name="TenantId" class="form-select" required>
+                <option value="">Select Tenant</option>
+                @foreach (var tenant in tenants)
+                {
+                    <option value="@tenant.Id">@tenant.FirstName @tenant.LastName (@tenant.UserName)</option>
+                }
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="RoomId" class="form-label">Room</label>
+            <select name="RoomId" class="form-select" required>
+                <option value="">Select Room</option>
+                @foreach (var room in rooms)
+                {
+                    <option value="@room.RoomId">@room.RoomNumber</option>
+                }
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="BillingDate" class="form-label">Billing Date</label>
+            <input type="date" name="BillingDate" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+        </div>
+        <div class="mb-3">
+            <label for="DueDate" class="form-label">Due Date</label>
+            <input type="date" name="DueDate" class="form-control" value="@DateTime.Today.AddDays(10).ToString("yyyy-MM-dd")" required />
+        </div>
+        <div class="mb-3">
+            <label for="MonthlyRent" class="form-label">Monthly Rent</label>
+            <input type="number" step="0.01" name="MonthlyRent" class="form-control" required />
+        </div>
+        <div class="mb-3">
+            <label for="WaterFee" class="form-label">Water Fee</label>
+            <input type="number" step="0.01" name="WaterFee" class="form-control" required />
+        </div>
+        <div class="mb-3">
+            <label for="ElectricityFee" class="form-label">Electricity Fee</label>
+            <input type="number" step="0.01" name="ElectricityFee" class="form-control" required />
+        </div>
+        <div class="mb-3">
+            <label for="WifiFee" class="form-label">WiFi Fee</label>
+            <input type="number" step="0.01" name="WifiFee" class="form-control" required />
+        </div>
+        <div class="mb-3">
+            <label for="LateFee" class="form-label">Late Fee</label>
+            <input type="number" step="0.01" name="LateFee" class="form-control" />
+        </div>
+        <div class="mb-3">
+            <label for="OtherFees" class="form-label">Other Fees</label>
+            <input type="number" step="0.01" name="OtherFees" class="form-control" />
+        </div>
+        <div class="mb-3">
+            <label for="OtherFeesDescription" class="form-label">Other Fees Description</label>
+            <input type="text" name="OtherFeesDescription" class="form-control" />
+        </div>
+        <div class="mb-3">
+            <label for="Status" class="form-label">Status</label>
+            <select name="Status" class="form-select" required>
+                <option value="Pending">Pending</option>
+                <option value="Paid">Paid</option>
+                <option value="Overdue">Overdue</option>
+                <option value="Cancelled">Cancelled</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-success">Create Bill</button>
+        <a asp-action="Bills" class="btn btn-secondary">Cancel</a>
+    </form>
+</div> 

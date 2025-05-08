@@ -1,32 +1,274 @@
-﻿@{
+﻿@model IEnumerable<BoardPaySystem.Models.ApplicationUser>
+@{
     ViewData["Title"] = "Manage Tenants";
     Layout = "_LandlordLayout";
 }
 
-<h3>
-    <span><i class="fas fa-users"></i> Manage Tenants</span>
-    <span class="actions"><a asp-action="AddTenant" asp-controller="Landlord" class="btn-success btn-small">Add New Tenant</a></span>
-</h3>
+<div class="content-section">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="page-title mb-0">
+            <i class="fas fa-users"></i>
+            Manage Tenants
+        </h3>
+        <a asp-action="AddTenant" class="btn btn-success">
+            <i class="fas fa-user-plus"></i> Add New Tenant
+        </a>
+    </div>
 
-<div class="filter-bar">
-    <label for="filter-tenant-building">Building:</label>
-    <select id="filter-tenant-building">
-        <option value="all">All Buildings</option>
-        <option value="Sunshine Apartments">Sunshine Apartments</option>
-        <option value="Moonlight Dorm">Moonlight Dorm</option>
-    </select>
-    @* Filtering needs server logic *@
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Info"] != null)
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="fas fa-info-circle me-2"></i> @TempData["Info"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="filter-tenant-building" class="form-label">Filter by Building:</label>
+                <select id="filter-tenant-building" class="form-select" style="max-width: 300px;">
+                    <option value="all">All Buildings</option>
+                    @foreach (var building in ViewBag.Buildings)
+                    {
+                        <option value="@building.BuildingId">@building.BuildingName</option>
+                    }
+                </select>
+            </div>
+
+            @if (!Model.Any())
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> No tenants have been added yet. Click the "Add New Tenant" button to add your first tenant.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Building</th>
+                                <th>Room</th>
+                                <th>Payment Due Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var tenant in Model)
+                            {
+                                <tr data-building-id="@(tenant.Room?.Floor?.Building?.BuildingId ?? 0)">
+                                    <td>@tenant.FirstName @tenant.LastName</td>
+                                    <td>
+                                        @tenant.PhoneNumber
+                                    </td>
+                                    <td>@(tenant.Room?.Floor?.Building?.BuildingName ?? "Not Assigned")</td>
+                                    <td>@(tenant.Room?.RoomNumber ?? "Not Assigned")</td>
+                                    <td>Day @tenant.BillingCycleDay of each month</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a asp-action="EditTenant" asp-route-id="@tenant.Id" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete('@tenant.Id', '@tenant.FirstName @tenant.LastName')">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
 </div>
 
-<table>
-    <thead><tr><th>Name</th><th>Building</th><th>Room #</th><th>Rent</th><th>Water Fee</th><th>WiFi Fee</th><th>Actions</th></tr></thead>
-    <tbody>
-        @* Replace with loop over Model data *@
-        <tr data-tenant-id="1"><td>Juan Dela Cruz</td><td>Sunshine Apartments</td><td>101</td><td>₱2700</td><td>₱100</td><td>₱200</td><td><button class="btn-secondary btn-small" onclick="showTenantDetails(1)">Update Fees</button> <button class="btn-danger btn-small">Remove</button></td></tr>
-        <tr data-tenant-id="2"><td>Maria Clara</td><td>Sunshine Apartments</td><td>102</td><td>₱2700</td><td>₱120 <i class="fas fa-edit" title="Override: Updated 2023-10-15"></i></td><td>₱200</td><td><button class="btn-secondary btn-small" onclick="showTenantDetails(2)">Update Fees</button> <button class="btn-danger btn-small">Remove</button></td></tr>
-        <tr data-tenant-id="3"><td>Crisostomo Ibarra</td><td>Moonlight Dorm</td><td>A1</td><td>₱3000</td><td>₱150</td><td>₱250</td><td><button class="btn-secondary btn-small" onclick="showTenantDetails(3)">Update Fees</button> <button class="btn-danger btn-small">Remove</button></td></tr>
-    </tbody>
-</table>
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Confirm Tenant Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Warning: This action cannot be undone!
+                </div>
+                <p>Are you sure you want to delete the tenant "<span id="tenantName" class="fw-bold"></span>"?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash me-1"></i>
+                    Delete Tenant
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
-@* Note: The showTenantDetails(id) JS function now triggers the shared modal from _LandlordLayout *@
-@* For a full detail view, you might redirect to a TenantDetail action/view instead *@
+@section Scripts {
+    <script>
+        let activeModal = null;
+        let tenantToDelete = null;
+
+        // Function to force cleanup all modal-related elements and styles
+        function forceCleanupModals() {
+            // Remove all modal backdrops first
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => {
+                backdrop.classList.remove('show');
+                backdrop.remove();
+            });
+
+            // Clean up body
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+
+            // Reset all modals
+            document.querySelectorAll('.modal').forEach(modal => {
+                const bsModal = bootstrap.Modal.getInstance(modal);
+                if (bsModal) {
+                    bsModal.dispose();
+                }
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+                modal.removeAttribute('aria-modal');
+                modal.removeAttribute('role');
+            });
+
+            // Force remove any remaining backdrop
+            const remainingBackdrops = document.querySelectorAll('.modal-backdrop');
+            remainingBackdrops.forEach(backdrop => backdrop.remove());
+
+            // Reset active modal
+            activeModal = null;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial cleanup
+            forceCleanupModals();
+
+            // Initialize delete confirmation modal
+            const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+            if (deleteConfirmModal) {
+                const modal = new bootstrap.Modal(deleteConfirmModal, {
+                    backdrop: false
+                });
+
+                // Handle modal events
+                deleteConfirmModal.addEventListener('hidden.bs.modal', forceCleanupModals);
+                deleteConfirmModal.addEventListener('show.bs.modal', function() {
+                    if (activeModal) {
+                        activeModal.hide();
+                        forceCleanupModals();
+                    }
+                    activeModal = modal;
+                });
+            }
+
+            // Handle clicks outside modals
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('modal')) {
+                    forceCleanupModals();
+                }
+            });
+
+            // Handle escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    forceCleanupModals();
+                }
+            });
+
+            // Auto-dismiss alerts after 5 seconds
+            setTimeout(function() {
+                $('.alert').fadeOut('slow');
+            }, 5000);
+            
+            // Filtering functionality for buildings
+            $('#filter-tenant-building').on('change', function() {
+                const selectedBuildingId = $(this).val();
+                
+                if (selectedBuildingId === 'all') {
+                    $('tr[data-building-id]').show();
+                } else {
+                    $('tr[data-building-id]').hide();
+                    $(`tr[data-building-id="${selectedBuildingId}"]`).show();
+                }
+            });
+        });
+
+        function showModal(modalId) {
+            forceCleanupModals();
+            const modalElement = document.getElementById(modalId);
+            const modal = new bootstrap.Modal(modalElement, {
+                backdrop: false
+            });
+            modal.show();
+            activeModal = modal;
+        }
+
+        function confirmDelete(tenantId, tenantName) {
+            tenantToDelete = tenantId;
+            document.getElementById('tenantName').textContent = tenantName;
+            showModal('deleteConfirmModal');
+        }
+
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            if (!tenantToDelete) return;
+
+            const deleteBtn = this;
+            deleteBtn.disabled = true;
+            deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+
+            fetch(`/Landlord/DeleteTenant/${tenantToDelete}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                forceCleanupModals();
+                if (data.success) {
+                    location.reload();
+                } else {
+                    const errorMessage = data.message || 'An unexpected error occurred. Please try again.';
+                    alert(errorMessage);
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete Tenant';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                forceCleanupModals();
+                alert('An error occurred while deleting the tenant. Please try again.');
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete Tenant';
+            });
+        });
+    </script>
+}
