@@ -1,178 +1,92 @@
-﻿@model IEnumerable<BoardPaySystem.Models.Bill>
-@{
+﻿@{
+    Layout = "_TenantLayout";
     ViewData["Title"] = "My Bills";
+    var billReadings = ViewBag.BillReadings as Dictionary<int, BoardPaySystem.Models.MeterReading>;
 }
 
-<div class="container mt-4">
-    <h1 class="mb-4">My Bills</h1>
+@model IEnumerable<BoardPaySystem.Models.Bill>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-    
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @TempData["Error"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    <div class="row mb-4">
-        <div class="col">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Current Bills</h5>
-                </div>
-                <div class="card-body">
-                    @if (!Model.Any(b => b.Status == BoardPaySystem.Models.BillStatus.NotPaid || b.Status == BoardPaySystem.Models.BillStatus.Overdue || b.Status == BoardPaySystem.Models.BillStatus.Pending))
-                    {
-                        <div class="alert alert-success">
-                            <i class="fas fa-check-circle"></i> You have no outstanding bills. All payments are up to date.
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-hover" id="currentBillsTable">
-                                <thead>
-                                    <tr>
-                                        <th>Bill #</th>
-                                        <th>Billing Period</th>
-                                        <th>Room</th>
-                                        <th>Due Date</th>
-                                        <th>Amount</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var bill in Model.Where(b => b.Status == BoardPaySystem.Models.BillStatus.NotPaid || b.Status == BoardPaySystem.Models.BillStatus.Overdue || b.Status == BoardPaySystem.Models.BillStatus.Pending))
-                                    {
-                                        <tr class="@(bill.Status == BoardPaySystem.Models.BillStatus.Overdue ? "table-danger" : bill.Status == BoardPaySystem.Models.BillStatus.Pending ? "table-info" : "")">
-                                            <td>@bill.BillId</td>
-                                            <td>@bill.BillingDate.ToString("MMMM yyyy")</td>
-                                            <td>@bill.Room.RoomNumber, @bill.Room.Floor.Building.BuildingName</td>
-                                            <td>
-                                                @if (bill.Status == BoardPaySystem.Models.BillStatus.Overdue)
-                                                {
-                                                    <span class="text-danger fw-bold">@bill.DueDate.ToString("MMM dd, yyyy") (Overdue)</span>
-                                                }
-                                                else
-                                                {
-                                                    @bill.DueDate.ToString("MMM dd, yyyy")
-                                                }
-                                            </td>
-                                            <td>@bill.TotalAmount.ToString("C")</td>
-                                            <td>
-                                                @switch (bill.Status)
-                                                {
-                                                    case BoardPaySystem.Models.BillStatus.NotPaid:
-                                                        <span class="badge bg-warning text-dark">Not Paid</span>
-                                                        break;
-                                                    case BoardPaySystem.Models.BillStatus.Overdue:
-                                                        <span class="badge bg-danger">Overdue</span>
-                                                        break;
-                                                    case BoardPaySystem.Models.BillStatus.Pending:
-                                                        <span class="badge bg-info">Payment Pending</span>
-                                                        break;
-                                                }
-                                            </td>
-                                            <td>
-                                                <div class="btn-group" role="group">
-                                                    <a asp-action="BillDetails" asp-route-id="@bill.BillId" class="btn btn-sm btn-info">
-                                                        <i class="fas fa-eye"></i> Details
-                                                    </a>
-                                                    @if (bill.Status != BoardPaySystem.Models.BillStatus.Pending)
-                                                    {
-                                                        <a asp-action="Payment" asp-route-id="@bill.BillId" class="btn btn-sm btn-success">
-                                                            <i class="fas fa-money-bill-wave"></i> Pay
-                                                        </a>
-                                                    }
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col">
-            <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">Recent Payments</h5>
-                </div>
-                <div class="card-body">
-                    @if (!Model.Any(b => b.Status == BoardPaySystem.Models.BillStatus.Paid))
-                    {
-                        <p>You have no payment history yet.</p>
-                    }
-                    else
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-hover" id="paidBillsTable">
-                                <thead>
-                                    <tr>
-                                        <th>Bill #</th>
-                                        <th>Billing Period</th>
-                                        <th>Room</th>
-                                        <th>Payment Date</th>
-                                        <th>Amount</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var bill in Model.Where(b => b.Status == BoardPaySystem.Models.BillStatus.Paid).OrderByDescending(b => b.PaymentDate).Take(5))
-                                    {
-                                        <tr>
-                                            <td>@bill.BillId</td>
-                                            <td>@bill.BillingDate.ToString("MMMM yyyy")</td>
-                                            <td>@bill.Room.RoomNumber, @bill.Room.Floor.Building.BuildingName</td>
-                                            <td>@(bill.PaymentDate?.ToString("MMM dd, yyyy") ?? "-")</td>
-                                            <td>@bill.TotalAmount.ToString("C")</td>
-                                            <td>
-                                                <a asp-action="BillDetails" asp-route-id="@bill.BillId" class="btn btn-sm btn-info">
-                                                    <i class="fas fa-eye"></i> Details
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <div class="mt-3">
-                            <a asp-action="Payments" class="btn btn-outline-success">
-                                <i class="fas fa-history"></i> View Full Payment History
-                            </a>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="content-section active">
+    <h3><i class="fas fa-file-invoice"></i> My Bills</h3>
+    <p>Your billing statement.</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Billing Month</th>
+                <th>Rent</th>
+                <th>Water</th>
+                <th>WiFi</th>
+                <th>Electricity</th>
+                <th>Total Bill</th>
+                <th>Due Date</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var bill in Model.OrderByDescending(b => b.BillingDate))
+            {
+                var isPaid = bill.Status == BoardPaySystem.Models.BillStatus.Paid;
+                var isPending = bill.Status == BoardPaySystem.Models.BillStatus.Pending;
+                var isOverdue = bill.Status == BoardPaySystem.Models.BillStatus.Overdue;
+                <tr>
+                    <td>@bill.BillingDate.ToString("MMM yyyy")</td>
+                    <td>₱@bill.MonthlyRent.ToString("N0")</td>
+                    <td>₱@bill.WaterFee.ToString("N0")</td>
+                    <td>₱@bill.WifiFee.ToString("N0")</td>
+                    <td>
+                        ₱@bill.ElectricityFee.ToString("N2")
+                        @if (billReadings != null && billReadings.TryGetValue(bill.BillId, out var reading))
+                        {
+                            <text> (@reading.UsageKwh.ToString("N2") kWh)</text>
+                        }
+                    </td>
+                    <td><b>₱@bill.TotalAmount.ToString("N2")</b></td>
+                    <td>@bill.DueDate.ToString("yyyy-MM-dd")</td>
+                    <td>
+                        @if (isPaid)
+                        {
+                            <span class="status status-paid">Paid</span>
+                        }
+                        else if (isPending)
+                        {
+                            <span class="status status-pending">Pending</span>
+                        }
+                        else if (isOverdue)
+                        {
+                            <span class="status status-overdue">Overdue</span>
+                        }
+                        else
+                        {
+                            <span class="status status-pending">Not Paid</span>
+                        }
+                    </td>
+                    <td>
+                        @if (!isPaid)
+                        {
+                            <a asp-action="Payment" asp-controller="Tenant" asp-route-id="@bill.BillId" class="btn-primary btn-small">Pay Now</a>
+                        }
+                        else
+                        {
+                            <a asp-action="BillDetails" asp-controller="Tenant" asp-route-id="@bill.BillId" class="btn-secondary btn-small">View Details</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
 </div>
 
 @section Scripts {
     <script>
         $(document).ready(function () {
             $('#currentBillsTable').DataTable({
-                "order": [[3, "asc"]],
+                "order": [[2, "asc"]],
                 "pageLength": 10
             });
             
             $('#paidBillsTable').DataTable({
-                "order": [[3, "desc"]],
+                "order": [[2, "desc"]],
                 "pageLength": 5
             });
         });

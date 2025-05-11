@@ -1,0 +1,10 @@
+using System.Threading.Tasks;
+using System.Collections.Generic;
+
+namespace BoardPaySystem.Services
+{
+    public interface ILandlordService
+    {
+        Task<Dictionary<string, object>> GetDashboardStatsAsync();
+    }
+} 

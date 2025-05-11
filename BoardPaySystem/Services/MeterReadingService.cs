@@ -28,12 +28,12 @@ namespace BoardPaySystem.Services
 
             // Get rate per kWh from the building or a default value
             var tenant = await _context.Users
-                .Include(t => t.Room)
+                .Include(t => t.CurrentRoom)
                     .ThenInclude(r => r.Floor)
                         .ThenInclude(f => f.Building)
                 .FirstOrDefaultAsync(t => t.Id == tenantId);
 
-            if (tenant == null || tenant.Room == null || tenant.Room.Floor == null || tenant.Room.Floor.Building == null)
+            if (tenant == null || tenant.CurrentRoom == null || tenant.CurrentRoom.Floor == null || tenant.CurrentRoom.Floor.Building == null)
             {
                 throw new ArgumentException($"Tenant {tenantId} or room {roomId} not found or incomplete data");
             }
@@ -45,8 +45,8 @@ namespace BoardPaySystem.Services
                 .FirstOrDefaultAsync();
 
             // Use the default electricity fee per kWh from the building
-            decimal ratePerKwh = tenant.Room.CustomElectricityFee ?? 
-                                 tenant.Room.Floor.Building.DefaultElectricityFee;
+            decimal ratePerKwh = tenant.CurrentRoom.CustomElectricityFee ?? 
+                                 tenant.CurrentRoom.Floor.Building.DefaultElectricityFee;
 
             var reading = new MeterReading
             {
@@ -54,7 +54,7 @@ namespace BoardPaySystem.Services
                 RoomId = roomId,
                 ReadingDate = readingDate,
                 CurrentReading = currentReading,
-                PreviousReading = previousReading?.CurrentReading,
+                PreviousReading = previousReading != null ? previousReading.CurrentReading : (decimal?)null,
                 RatePerKwh = ratePerKwh,
                 Notes = notes
             };
@@ -144,11 +144,20 @@ namespace BoardPaySystem.Services
             // Get the last day of the billing month
             var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
             
-            // Check if there's at least one reading in this period
-            return await _context.MeterReadings
-                .AnyAsync(m => m.TenantId == tenantId && 
-                               m.ReadingDate >= firstDayOfMonth && 
-                               m.ReadingDate <= lastDayOfMonth);
+            try
+            {
+                // Check if there's at least one reading in this period
+                return await _context.MeterReadings
+                    .AnyAsync(m => m.TenantId == tenantId && 
+                                  m.ReadingDate >= firstDayOfMonth && 
+                                  m.ReadingDate <= lastDayOfMonth);
+            }
+            catch (Exception ex)
+            {
+                // If the table doesn't exist yet, or any other error occurs, log and return false
+                _logger.LogWarning(ex, "Error checking for meter readings for tenant {TenantId}: {ErrorMessage}", tenantId, ex.Message);
+                return false;
+            }
         }
     }
 }

@@ -9,33 +9,30 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace BoardPaySystem.Controllers
 {
-    [Authorize(Roles = "Landlord")]
-    public class BillingController : Controller
+    [Authorize(Roles = "Landlord")]    public class BillingController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly IBillingService _billingService;
+        private readonly ILogger<BillingController> _logger;
 
-        public BillingController(ApplicationDbContext context, IBillingService billingService)
+        public BillingController(ApplicationDbContext context, IBillingService billingService, ILogger<BillingController> logger)
         {
             _context = context;
             _billingService = billingService;
+            _logger = logger;
         }
 
         // GET: /Billing/Index
         public IActionResult Index()
         {
-            return RedirectToAction("Bills");
+            return RedirectToAction("Billing", "Landlord");
         }
 
         // GET: /Billing/Bills
-        public async Task<IActionResult> Bills()
+        public IActionResult Bills()
         {
-            var bills = await _context.Bills
-                .Include(b => b.Tenant)
-                .Include(b => b.Room)
-                .OrderByDescending(b => b.BillingDate)
-                .ToListAsync();
-            return View(bills);
+            // Redirect to the consolidated Landlord/Billing view
+            return RedirectToAction("Billing", "Landlord");
         }
 
         // GET: /Billing/BillDetails/5
@@ -44,16 +41,62 @@ namespace BoardPaySystem.Controllers
             var bill = await _context.Bills
                 .Include(b => b.Tenant)
                 .Include(b => b.Room)
+                    .ThenInclude(r => r.Floor)
+                        .ThenInclude(f => f != null ? f.Building : null)
                 .FirstOrDefaultAsync(b => b.BillId == id);
+                
             if (bill == null)
             {
                 return NotFound();
             }
+            
             var payments = await _context.Payments
                 .Where(p => p.BillId == id)
                 .OrderBy(p => p.PaymentDate)
                 .ToListAsync();
             ViewBag.Payments = payments;
+            
+            // Check if bill is actually overdue based on due date, regardless of its current status
+            bool isPastDueDate = bill.DueDate < DateTime.Now.Date;
+            bool isUnpaid = bill.Status == BillStatus.NotPaid || bill.Status == BillStatus.Pending;
+            ViewBag.IsPastDueDate = isPastDueDate && isUnpaid;
+            
+            // Calculate overdue amounts if bill is overdue or should be overdue
+            if ((bill.Status == BillStatus.Overdue || (isPastDueDate && isUnpaid)) && bill.Room?.Floor?.Building != null)
+            {
+                decimal lateFeePercentage = bill.Room.Floor.Building.LateFee;
+                
+                // Calculate late fee adjustments for each charge
+                decimal adjustedRent = bill.MonthlyRent * (1 + lateFeePercentage / 100);
+                decimal adjustedWaterFee = bill.WaterFee * (1 + lateFeePercentage / 100);
+                decimal adjustedElectricityFee = bill.ElectricityFee * (1 + lateFeePercentage / 100);
+                decimal adjustedWifiFee = bill.WifiFee * (1 + lateFeePercentage / 100);
+                
+                // Calculate the total late fee (difference between original and adjusted amounts)
+                decimal totalLateFee = (adjustedRent - bill.MonthlyRent) +
+                                      (adjustedWaterFee - bill.WaterFee) +
+                                      (adjustedElectricityFee - bill.ElectricityFee) +
+                                      (adjustedWifiFee - bill.WifiFee);
+                
+                // Calculate days overdue
+                TimeSpan daysLate = DateTime.Now.Date - bill.DueDate.Date;
+                
+                // Put the adjusted values in ViewBag
+                ViewBag.IsOverdue = true;
+                ViewBag.DaysOverdue = daysLate.Days;
+                ViewBag.LateFeePercentage = lateFeePercentage;
+                ViewBag.AdjustedRent = adjustedRent;
+                ViewBag.AdjustedWaterFee = adjustedWaterFee;
+                ViewBag.AdjustedElectricityFee = adjustedElectricityFee;
+                ViewBag.AdjustedWifiFee = adjustedWifiFee;
+                ViewBag.TotalLateFee = totalLateFee;
+                ViewBag.AdjustedTotal = bill.TotalAmount + totalLateFee - (bill.LateFee ?? 0); // To avoid double counting
+            }
+            else
+            {
+                ViewBag.IsOverdue = false;
+            }
+            
             return View(bill);
         }
 
@@ -61,7 +104,20 @@ namespace BoardPaySystem.Controllers
         public async Task<IActionResult> CreateBill()
         {
             ViewBag.Tenants = await _context.Users.Where(u => u.RoomId != null).ToListAsync();
-            ViewBag.Rooms = await _context.Rooms.ToListAsync();
+            var rooms = await _context.Rooms.Include(r => r.Floor).ThenInclude(f => f.Building).ToListAsync();
+            ViewBag.Rooms = rooms;
+            // Build a dictionary of fees per room
+            var roomFees = rooms.ToDictionary(
+                r => r.RoomId,
+                r => new Dictionary<string, decimal>
+                {
+                    { "MonthlyRent", r.CustomMonthlyRent ?? r.Floor?.Building?.DefaultMonthlyRent ?? 0 },
+                    { "WaterFee", r.CustomWaterFee ?? r.Floor?.Building?.DefaultWaterFee ?? 0 },
+                    { "ElectricityFee", r.CustomElectricityFee ?? r.Floor?.Building?.DefaultElectricityFee ?? 0 },
+                    { "WifiFee", r.CustomWifiFee ?? r.Floor?.Building?.DefaultWifiFee ?? 0 }
+                }
+            );
+            ViewBag.RoomFees = roomFees;
             return View();
         }
 
@@ -72,9 +128,15 @@ namespace BoardPaySystem.Controllers
         {
             if (ModelState.IsValid)
             {
+                // Set BillingMonth and BillingYear from BillingDate
+                if (bill.BillingDate != default)
+                {
+                    bill.BillingMonth = bill.BillingDate.Month;
+                    bill.BillingYear = bill.BillingDate.Year;
+                }
                 _context.Bills.Add(bill);
                 await _context.SaveChangesAsync();
-                return RedirectToAction("Bills");
+                return RedirectToAction("Billing", "Landlord");
             }
             ViewBag.Tenants = await _context.Users.Where(u => u.RoomId != null).ToListAsync();
             ViewBag.Rooms = await _context.Rooms.ToListAsync();
@@ -104,7 +166,7 @@ namespace BoardPaySystem.Controllers
                 TempData["ErrorMessage"] = $"Error generating bills: {ex.Message}";
             }
             
-            return RedirectToAction("Bills");
+            return RedirectToAction("Billing", "Landlord");
         }
 
         // GET: /Billing/RecordPayment/5
@@ -209,7 +271,7 @@ namespace BoardPaySystem.Controllers
         {
             await _billingService.UpdateBillStatusesAsync();
             TempData["SuccessMessage"] = "Bill statuses updated successfully.";
-            return RedirectToAction("Bills");
+            return RedirectToAction("Billing", "Landlord");
         }
 
         // GET: /Billing/GenerateInitialBill
@@ -217,17 +279,17 @@ namespace BoardPaySystem.Controllers
         {
             // Get the tenant with room and building information
             var tenant = await _context.Users
-                .Include(u => u.Room!)
+                .Include(u => u.CurrentRoom!)
                     .ThenInclude(r => r.Floor!)
                         .ThenInclude(f => f.Building!)
                 .FirstOrDefaultAsync(u => u.Id == tenantId);
                 
-            if (tenant == null || tenant.Room == null || tenant.Room.Floor == null || tenant.Room.Floor.Building == null)
+            if (tenant == null || tenant.CurrentRoom == null || tenant.CurrentRoom.Floor == null || tenant.CurrentRoom.Floor.Building == null)
             {
                 return NotFound("Tenant, room, or building information not found.");
             }
             
-            var building = tenant.Room.Floor.Building;
+            var building = tenant.CurrentRoom.Floor.Building;
             var today = DateTime.Today;
             var firstDayOfMonth = new DateTime(today.Year, today.Month, 1);
             
@@ -235,13 +297,13 @@ namespace BoardPaySystem.Controllers
             var bill = new Bill
             {
                 TenantId = tenantId,
-                RoomId = tenant.Room.RoomId,
+                RoomId = tenant.CurrentRoom.RoomId,
                 BillingDate = firstDayOfMonth,
                 DueDate = new DateTime(today.Year, today.Month, tenant.BillingCycleDay),
-                MonthlyRent = tenant.Room.CustomMonthlyRent ?? building.DefaultMonthlyRent,
-                WaterFee = tenant.Room.CustomWaterFee ?? building.DefaultWaterFee,
+                MonthlyRent = tenant.CurrentRoom.CustomMonthlyRent ?? building.DefaultMonthlyRent,
+                WaterFee = tenant.CurrentRoom.CustomWaterFee ?? building.DefaultWaterFee,
                 ElectricityFee = 0, // Will be calculated based on meter readings
-                WifiFee = tenant.Room.CustomWifiFee ?? building.DefaultWifiFee,
+                WifiFee = tenant.CurrentRoom.CustomWifiFee ?? building.DefaultWifiFee,
                 Status = BillStatus.Pending,
                 Notes = "Initial bill generated on " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
             };
@@ -303,6 +365,128 @@ namespace BoardPaySystem.Controllers
             
             TempData["SuccessMessage"] = $"GCash payment for {tenantName} has been approved.";
             return RedirectToAction("BillDetails", new { id = billId });
+        }
+
+        // POST: /Billing/BatchRecordPayment
+        [HttpPost]
+        public async Task<IActionResult> BatchRecordPayment(string billIds, DateTime paymentDate, string paymentMethod, string? paymentReference = null, string? notes = null)
+        {
+            if (string.IsNullOrWhiteSpace(billIds))
+            {
+                return Json(new { success = false, message = "No bills selected" });
+            }
+            
+            try
+            {
+                // Split the comma-separated string of bill IDs
+                var billIdArray = billIds.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                var processedCount = 0;
+                
+                foreach (var idStr in billIdArray)
+                {
+                    if (int.TryParse(idStr, out int billId))
+                    {
+                        var bill = await _context.Bills
+                            .Include(b => b.Tenant)
+                            .FirstOrDefaultAsync(b => b.BillId == billId);
+                        
+                        if (bill == null)
+                        {
+                            continue; // Skip non-existent bills
+                        }
+                        
+                        // Skip already paid bills
+                        if (bill.Status == BillStatus.Paid)
+                        {
+                            continue;
+                        }
+                        
+                        // Mark the bill as paid
+                        bill.Status = BillStatus.Paid;
+                        bill.PaymentDate = paymentDate;
+                        bill.PaymentMethod = paymentMethod;
+                        bill.PaymentReference = paymentReference;
+                        bill.Notes = string.IsNullOrEmpty(bill.Notes) 
+                            ? notes
+                            : $"{bill.Notes}\nPayment notes: {notes}";
+                        bill.AmountPaid = bill.TotalAmount;
+                        
+                        // Create payment record
+                        var payment = new Payment
+                        {
+                            BillId = billId,
+                            Amount = bill.TotalAmount,
+                            PaymentDate = paymentDate,
+                            PaymentMethod = paymentMethod,
+                            ReferenceNumber = paymentReference,
+                            Notes = notes
+                        };
+                        
+                        _context.Payments.Add(payment);
+                        processedCount++;
+                    }
+                }
+                
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, message = $"Successfully processed payment for {processedCount} bills" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing batch payment for bills {BillIds}", billIds);
+                return Json(new { success = false, message = $"Error processing payment: {ex.Message}" });
+            }
+        }
+
+        // GET: /Billing/GetAvailableMeterReadings?billId=123
+        [HttpGet]
+        public async Task<IActionResult> GetAvailableMeterReadings(int billId)
+        {
+            var bill = await _context.Bills.FindAsync(billId);
+            if (bill == null)
+                return NotFound();
+
+            var firstDay = new DateTime(bill.BillingYear, bill.BillingMonth, 1);
+            var lastDay = firstDay.AddMonths(1).AddDays(-1);
+
+            var readings = await _context.MeterReadings
+                .Where(m => m.TenantId == bill.TenantId
+                    && m.ReadingDate >= firstDay
+                    && m.ReadingDate <= lastDay
+                    && m.BillId == null)
+                .OrderBy(m => m.ReadingDate)
+                .Select(m => new {
+                    m.ReadingId,
+                    m.ReadingDate,
+                    m.CurrentReading,
+                    m.UsageKwh,
+                    m.TotalCharge
+                })
+                .ToListAsync();
+
+            return Json(readings);
+        }
+
+        // POST: /Billing/LinkMeterReading
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> LinkMeterReading(int billId, int readingId)
+        {
+            var bill = await _context.Bills.FindAsync(billId);
+            var reading = await _context.MeterReadings.FindAsync(readingId);
+
+            if (bill == null || reading == null)
+                return Json(new { success = false, message = "Bill or reading not found." });
+
+            if (reading.BillId != null)
+                return Json(new { success = false, message = "This reading is already linked to a bill." });
+
+            // Link the reading to the bill
+            reading.BillId = billId;
+            bill.ElectricityFee = reading.TotalCharge;
+
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Meter reading linked successfully.", charge = reading.TotalCharge });
         }
     }
 }

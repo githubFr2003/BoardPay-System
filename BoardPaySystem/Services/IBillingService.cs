@@ -27,5 +27,8 @@ namespace BoardPaySystem.Services
         
         // Calculate the next billing date for a tenant based on their start date
         DateTime CalculateNextBillingDate(DateTime startDate, DateTime currentDate);
+
+        // Ensures every tenant has a bill for every month from their start date to now
+        Task<int> BackfillBillsForAllTenantsAsync();
     }
 }

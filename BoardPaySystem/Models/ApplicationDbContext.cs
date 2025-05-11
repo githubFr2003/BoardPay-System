@@ -44,7 +44,7 @@ namespace BoardPaySystem.Models
 
             builder.Entity<Room>()
                 .HasOne(r => r.CurrentTenant)
-                .WithOne(u => u.Room)
+                .WithOne(u => u.CurrentRoom)
                 .HasForeignKey<ApplicationUser>(u => u.RoomId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.NoAction);

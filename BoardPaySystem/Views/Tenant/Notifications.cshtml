@@ -1,21 +1,21 @@
 ﻿@{
-    ViewData["Title"] = "Notifications";
     Layout = "_TenantLayout";
+    ViewData["Title"] = "Notifications";
 }
 
-<h3><i class="fas fa-bell"></i> Notifications</h3>
-
-@* Replace with loop over Model data *@
-<div class="info-card" style="border-left-color: #e74c3c;">
-    <h4>Fee Update Notification</h4>
-    <p><strong>Date:</strong> 2023-10-15</p>
-    <p>Your <strong>Water Fee</strong> was updated from ₱100.00 to <strong>₱120.00</strong>.</p>
-    <button class="btn-secondary btn-small">Mark as Read</button> @* Server action needed *@
+<div class="content-section active">
+    <h3><i class="fas fa-bell"></i> Notifications</h3>
+    <div class="info-card" style="border-left-color: #e74c3c;">
+        <h4>Fee Update Notification</h4>
+        <p><strong>Date:</strong> 2023-10-15</p>
+        <p>Your <strong>Water Fee</strong> was updated from ₱100.00 to <strong>₱120.00</strong>.</p>
+        <button class="btn-secondary btn-small">Mark as Read</button>
+    </div>
+    <div class="info-card" style="border-left-color: #3498db;">
+        <h4>New Bill Generated</h4>
+        <p><strong>Date:</strong> 2023-11-01</p>
+        <p>Bill for Nov 2023 generated. Total: ₱3843.00. Due: 2023-11-15.</p>
+        <button class="btn-secondary btn-small">View Bill</button>
+    </div>
+    <p class="text-center mt-20" style="color: #888;">No more unread notifications.</p>
 </div>
-<div class="info-card" style="border-left-color: #3498db;">
-    <h4>New Bill Generated</h4>
-    <p><strong>Date:</strong> 2023-11-01</p>
-    <p>Bill for Nov 2023 generated. Total: ₱3843.00. Due: 2023-11-15.</p>
-    <a asp-action="Bills" asp-controller="Tenant" class="btn-secondary btn-small">View Bill</a>
-</div>
-<p class="text-center mt-20" style="color: #888;">No more unread notifications.</p>

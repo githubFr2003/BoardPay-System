@@ -36,15 +36,10 @@
             </div>
 
             <div class="form-group">
-                <label asp-for="BillingCycleDay">Payment Due Date (day of month)</label>
-                <select asp-for="BillingCycleDay" class="form-control" required>
-                    @for (int day = 1; day <= 31; day++)
-                    {
-                        <option value="@day">@day</option>
-                    }
-                </select>
-                <span asp-validation-for="BillingCycleDay" class="text-danger"></span>
-                <small class="form-text text-muted">This is the day of each month when payment is due. If not paid by this date, late fees may apply.</small>
+                <label asp-for="StartDate">Contract Start Date</label>
+                <input asp-for="StartDate" class="form-control" type="date" required />
+                <span asp-validation-for="StartDate" class="text-danger"></span>
+                <small class="form-text text-muted">This is the date when the tenant's contract started. Monthly payments will be due based on this date.</small>
             </div>
 
             <div class="form-group">
@@ -90,7 +85,7 @@
                     LastName: "required",
                     UserName: "required",
                     PhoneNumber: "required",
-                    BillingCycleDay: "required",
+                    StartDate: "required",
                     confirmPassword: {
                         equalTo: "#Password"
                     }
@@ -100,7 +95,7 @@
                     LastName: "Please enter last name",
                     UserName: "Please enter username",
                     PhoneNumber: "Please enter phone number",
-                    BillingCycleDay: "Please select a billing cycle day",
+                    StartDate: "Please select a contract start date",
                     confirmPassword: {
                         equalTo: "Passwords do not match"
                     }

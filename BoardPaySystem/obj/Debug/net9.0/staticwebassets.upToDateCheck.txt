@@ -44,6 +44,7 @@ C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\jquery-vali
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\jquery\jquery.min.js
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.min.css
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.js.map
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\css\tenant-custom.css
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\jquery-validation\dist\additional-methods.js
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\dist\js\bootstrap.min.js.map
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.css
@@ -64,6 +65,7 @@ C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\d
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.css
 wwwroot\css\responsive.css
 wwwroot\css\site.css
+wwwroot\css\tenant-custom.css
 wwwroot\favicon.ico
 wwwroot\js\site.js
 wwwroot\lib\bootstrap\dist\css\bootstrap.css

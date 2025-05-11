@@ -138,13 +138,7 @@ public class AccountController : Controller
                     }
                     else if (await _userManager.IsInRoleAsync(user, "Tenant"))
                     {
-                        return RedirectToAction("Index", "Tenant");
-        }
-        else
-        {
-                        await _signInManager.SignOutAsync();
-                        ModelState.AddModelError(string.Empty, "User has no assigned role.");
-                        return RedirectToAction("Index", "Home");
+                        return RedirectToAction("Bills", "Tenant");
                     }
                 }
 

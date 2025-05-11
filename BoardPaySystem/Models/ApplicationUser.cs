@@ -26,7 +26,6 @@ namespace BoardPaySystem.Models
         public int? RoomId { get; set; }
         
         // Changed from Required to NotMapped to make it compatible with the existing database
-        [NotMapped]
         [DataType(DataType.Date)]
         public DateTime StartDate { get; set; } = DateTime.Today;
 
@@ -42,6 +41,6 @@ namespace BoardPaySystem.Models
 
         // Navigation properties
         public virtual Building? Building { get; set; }
-        public virtual Room? Room { get; set; }
+        public virtual Room? CurrentRoom { get; set; }
     }
 }

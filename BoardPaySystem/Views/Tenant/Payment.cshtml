@@ -1,142 +1,28 @@
 ﻿@model BoardPaySystem.Models.Bill
-
 @{
-    ViewData["Title"] = "Make Payment";
+    Layout = "_TenantLayout";
+    ViewData["Title"] = "Payment Options";
 }
 
-<div class="container mt-4">
-    <div class="row mb-3">
-        <div class="col">
-            <a asp-action="Bills" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left"></i> Back to Bills
-            </a>
-        </div>
+<div class="content-section active">
+    <h3><i class="fas fa-credit-card"></i> Payment Options</h3>
+    <div class="info-card">
+        <h4>Pay via GCash</h4>
+        <p>Click button to simulate paying ₱@Model.TotalAmount.ToString("N2").</p>
+        <p><strong>GCash Number:</strong> 0917-XXX-XXXX (J. Reyes)</p>
+        <form asp-action="SubmitPayment" method="post">
+            <input type="hidden" name="billId" value="@Model.BillId" />
+            <div class="form-group mb-3">
+                <label for="paymentReference" class="form-label">GCash Reference Number</label>
+                <input type="text" class="form-control" id="paymentReference" name="paymentReference" required placeholder="Enter the GCash reference number here" />
+                <div class="form-text">This is the unique reference number provided by GCash after your payment</div>
+            </div>
+            <button type="submit" class="btn-success mt-20">Simulate GCash Payment</button>
+        </form>
     </div>
-
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h4 class="mb-0">Make Payment for Bill #@Model.BillId</h4>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <h5>Bill Information</h5>
-                            <table class="table table-sm">
-                                <tr>
-                                    <th>Bill ID:</th>
-                                    <td>@Model.BillId</td>
-                                </tr>
-                                <tr>
-                                    <th>Billing Date:</th>
-                                    <td>@Model.BillingDate.ToString()</td>
-                                </tr>
-                                <tr>
-                                    <th>Due Date:</th>
-                                    <td>@Model.DueDate.ToString()</td>
-                                </tr>
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <h5>Payment Details</h5>
-                            <table class="table table-sm">
-                                <tr>
-                                    <th>Amount Due:</th>
-                                    <td class="fw-bold fs-5">@Model.TotalAmount.ToString()</td>
-                                </tr>
-                                <tr>
-                                    <th>Room:</th>
-                                    <td>@Model.Room.RoomNumber, @Model.Room.Floor.Building.BuildingName</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-
-                    <h5 class="border-bottom pb-2">Payment Method</h5>
-                    <div class="row mb-4">
-                        <div class="col-md-12">
-                            <div class="alert alert-info">
-                                <h5><i class="fas fa-info-circle"></i> GCash Payment Instructions</h5>
-                                <p>Follow these steps to make your payment via GCash:</p>
-                                <ol>
-                                    <li>Open your GCash app on your phone</li>
-                                    <li>Select "Send Money"</li>
-                                    <li>Send the exact amount of <strong>@Model.TotalAmount.ToString()</strong> to the following number: <strong>09123456789</strong></li>
-                                    <li>Use your <strong>Bill #@Model.BillId</strong> as the reference/message</li>
-                                    <li>After sending, copy your GCash reference number and enter it below</li>
-                                </ol>
-                            </div>
-                        </div>
-                    </div>
-
-                    <form asp-action="SubmitPayment" method="post">
-                        <input type="hidden" name="billId" value="@Model.BillId" />
-                        
-                        <div class="form-group mb-3">
-                            <label for="paymentReference" class="form-label">GCash Reference Number</label>
-                            <input type="text" class="form-control" id="paymentReference" name="paymentReference" required 
-                                placeholder="Enter the GCash reference number here" />
-                            <div class="form-text">This is the unique reference number provided by GCash after your payment</div>
-                        </div>
-
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
-                            <button type="submit" class="btn btn-success btn-lg">
-                                <i class="fas fa-check-circle"></i> Submit Payment
-                            </button>
-                            <a asp-action="Bills" class="btn btn-outline-secondary btn-lg">Cancel</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Bill Summary</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <h6>Bill Breakdown:</h6>
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                Monthly Rent
-                                <span>@Model.MonthlyRent.ToString()</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                Water Fee
-                                <span>@Model.WaterFee.ToString()</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                Electricity Fee
-                                <span>@Model.ElectricityFee.ToString()</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                WiFi Fee
-                                <span>@Model.WifiFee.ToString()</span>
-                            </li>
-                            @if (Model.LateFee > 0)
-                            {
-                                <li class="list-group-item d-flex justify-content-between align-items-center text-danger">
-                                    Late Fee
-                                    <span>@Model.LateFee.ToString()</span>
-                                </li>
-                            }
-                            @if (Model.OtherFees > 0)
-                            {
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    Other Fees
-                                    <span>@Model.OtherFees.ToString()</span>
-                                </li>
-                            }
-                            <li class="list-group-item d-flex justify-content-between align-items-center fw-bold">
-                                Total
-                                <span>@Model.TotalAmount.ToString()</span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="info-card">
+        <h4>Pay In Person</h4>
+        <p>Pay at Sunshine Apartments Office.</p>
+        <p><strong>Availability:</strong> Mon-Fri, 9 AM - 5 PM</p>
     </div>
 </div>

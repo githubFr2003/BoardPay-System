@@ -130,6 +130,12 @@ namespace BoardPaySystem.Migrations
                     b.Property<DateTime>("BillingDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("BillingMonth")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BillingYear")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("DueDate")
                         .HasColumnType("datetime2");
 
@@ -582,14 +588,14 @@ namespace BoardPaySystem.Migrations
                         .HasForeignKey("BuildingId")
                         .OnDelete(DeleteBehavior.NoAction);
 
-                    b.HasOne("BoardPaySystem.Models.Room", "Room")
+                    b.HasOne("BoardPaySystem.Models.Room", "CurrentRoom")
                         .WithOne("CurrentTenant")
                         .HasForeignKey("BoardPaySystem.Models.ApplicationUser", "RoomId")
                         .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("Building");
 
-                    b.Navigation("Room");
+                    b.Navigation("CurrentRoom");
                 });
 
             modelBuilder.Entity("BoardPaySystem.Models.Bill", b =>

@@ -49,7 +49,6 @@ namespace BoardPaySystem.Models
         [BindNever]
         public virtual Floor? Floor { get; set; }
         
-        [DeleteBehavior(DeleteBehavior.NoAction)]
         public virtual ApplicationUser? CurrentTenant { get; set; }
         
         public override string ToString()

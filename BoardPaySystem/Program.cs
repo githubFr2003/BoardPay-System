@@ -39,8 +39,21 @@ builder.Services.AddScoped<IRoleInitializer, RoleInitializer>();
 // Add billing service
 builder.Services.AddScoped<IBillingService, BillingService>();
 
-// Add meter reading service
-builder.Services.AddScoped<IMeterReadingService, MeterReadingService>();
+// Add meter reading service with resilience to missing tables
+builder.Services.AddScoped<IMeterReadingService, ResilienceMeterReadingService>();
+
+// Add database update service to fix schema
+builder.Services.AddHostedService<DbUpdateService>();
+
+// Add billing background service (but only if not running in a special debug mode)
+var disableBackgroundServices = builder.Configuration.GetValue<bool>("DisableBackgroundServices");
+if (!disableBackgroundServices)
+{
+    builder.Services.AddHostedService<BillingBackgroundService>();
+}
+
+// Add landlord service
+builder.Services.AddScoped<ILandlordService, LandlordService>();
 
 var app = builder.Build();
 

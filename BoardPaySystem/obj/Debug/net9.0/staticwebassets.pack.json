@@ -13,6 +13,10 @@
       "PackagePath": "staticwebassets\\css\\site.css"
     },
     {
+      "Id": "C:\\Users\\User\\source\\repos\\BoardPaySystem\\BoardPaySystem\\wwwroot\\css\\tenant-custom.css",
+      "PackagePath": "staticwebassets\\css\\tenant-custom.css"
+    },
+    {
       "Id": "C:\\Users\\User\\source\\repos\\BoardPaySystem\\BoardPaySystem\\wwwroot\\favicon.ico",
       "PackagePath": "staticwebassets\\favicon.ico"
     },

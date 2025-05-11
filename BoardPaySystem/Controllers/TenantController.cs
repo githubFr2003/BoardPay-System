@@ -23,47 +23,10 @@ namespace BoardPaySystem.Controllers
             _userManager = userManager;
         }
 
-        // GET: Tenant Dashboard
-        public async Task<IActionResult> Index()
+        // GET: Tenant Dashboard (redirect to Bills)
+        public IActionResult Index()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized();
-            }
-            
-            // Get upcoming bills (not paid and not overdue)
-            var upcomingBills = await _context.Bills
-                .Where(b => b.TenantId == userId && 
-                           (b.Status == BillStatus.NotPaid || b.Status == BillStatus.Pending) && 
-                           b.DueDate >= DateTime.Today)
-                .Include(b => b.Room)
-                .OrderBy(b => b.DueDate)
-                .Take(5)
-                .ToListAsync();
-            
-            // Get recent payments
-            var recentPayments = await _context.Bills
-                .Where(b => b.TenantId == userId && b.Status == BillStatus.Paid)
-                .Include(b => b.Room)
-                .OrderByDescending(b => b.PaymentDate)
-                .Take(5)
-                .ToListAsync();
-            
-            // Get overdue bills
-            var overdueBills = await _context.Bills
-                .Where(b => b.TenantId == userId && 
-                          b.Status == BillStatus.NotPaid && 
-                          b.DueDate < DateTime.Today)
-                .Include(b => b.Room)
-                .OrderBy(b => b.DueDate)
-                .ToListAsync();
-
-            ViewBag.UpcomingBills = upcomingBills;
-            ViewBag.RecentPayments = recentPayments;
-            ViewBag.OverdueBills = overdueBills;
-            
-            return View();
+            return RedirectToAction("Bills");
         }
 
         // GET: Tenant/Bills
@@ -72,12 +35,19 @@ namespace BoardPaySystem.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             
             var bills = await _context.Bills
-                .Where(b => b.TenantId == userId && 
-                          (b.Status == BillStatus.NotPaid || b.Status == BillStatus.Pending))
-                .Include(b => b.Room)
-                .OrderBy(b => b.DueDate)
+                .Where(b => b.TenantId == userId)
+                .OrderByDescending(b => b.BillingDate)
                 .ToListAsync();
-            
+
+            // Get all meter readings linked to these bills
+            var billIds = bills.Select(b => b.BillId).ToList();
+            var readings = await _context.MeterReadings
+                .Where(m => m.BillId != null && billIds.Contains(m.BillId.Value))
+                .ToListAsync();
+
+            // Dictionary for quick lookup in the view
+            ViewBag.BillReadings = readings.ToDictionary(r => r.BillId.Value, r => r);
+
             return View(bills);
         }
 
@@ -99,14 +69,11 @@ namespace BoardPaySystem.Controllers
         public async Task<IActionResult> History()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            
-            var allBills = await _context.Bills
-                .Where(b => b.TenantId == userId)
-                .Include(b => b.Room)
-                .OrderByDescending(b => b.BillingDate)
+            var readings = await _context.MeterReadings
+                .Where(m => m.TenantId == userId)
+                .OrderByDescending(m => m.ReadingDate)
                 .ToListAsync();
-            
-            return View(allBills);
+            return View(readings);
         }
 
         // GET: Tenant/Profile
@@ -135,24 +102,16 @@ namespace BoardPaySystem.Controllers
             return View(user);
         }
 
-        // GET: Tenant/Payment/5
+        // GET: Tenant/Payment/{id}
         public async Task<IActionResult> Payment(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized();
-            }
-            
-            var bill = await _context.Bills
-                .Include(b => b.Room)
-                .FirstOrDefaultAsync(b => b.BillId == id && b.TenantId == userId);
-            
+            var bill = await _context.Bills.FirstOrDefaultAsync(b => b.BillId == id && b.TenantId == userId);
             if (bill == null)
             {
-                return NotFound();
+                TempData["Error"] = "Bill not found.";
+                return RedirectToAction("Bills");
             }
-            
             return View(bill);
         }
 
@@ -251,6 +210,19 @@ namespace BoardPaySystem.Controllers
             
             TempData["InfoMessage"] = "Payment process has been cancelled.";
             return RedirectToAction(nameof(Bills));
+        }
+
+        // GET: Tenant/Overview
+        public IActionResult Overview()
+        {
+            return RedirectToAction("Index");
+        }
+
+        // GET: Tenant/Notifications
+        public IActionResult Notifications()
+        {
+            // You can load notifications from the database if implemented, or just return the view for now
+            return View();
         }
     }
 }

@@ -1,0 +1,35 @@
+@model IEnumerable<BoardPaySystem.Models.MeterReading>
+@{
+    ViewData["Title"] = "Tenant Meter Reading History";
+    Layout = "_LandlordLayout";
+    var tenant = ViewBag.Tenant as BoardPaySystem.Models.ApplicationUser;
+}
+
+<h3><i class="fas fa-history"></i> Meter Reading History for @tenant?.FirstName @tenant?.LastName</h3>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Previous (kWh)</th>
+            <th>Current (kWh)</th>
+            <th>Usage (kWh)</th>
+            <th>Rate (₱)</th>
+            <th>Charge (₱)</th>
+            <th>Notes</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var reading in Model.OrderByDescending(r => r.ReadingDate))
+        {
+            <tr>
+                <td>@reading.ReadingDate.ToString("yyyy-MM-dd")</td>
+                <td>@reading.PreviousReading</td>
+                <td>@reading.CurrentReading</td>
+                <td>@reading.UsageKwh</td>
+                <td>@reading.RatePerKwh</td>
+                <td>@reading.TotalCharge.ToString("C")</td>
+                <td>@reading.Notes</td>
+            </tr>
+        }
+    </tbody>
+</table> 

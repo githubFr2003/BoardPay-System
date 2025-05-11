@@ -35,113 +35,49 @@ namespace BoardPaySystem.Controllers
         // GET: MeterReading/Index
         public async Task<IActionResult> Index()
         {
+            _logger.LogWarning("DEBUG: Actual connection string: " + _context.Database.GetDbConnection().ConnectionString);
+            _logger.LogWarning("DEBUG: Database name: " + _context.Database.GetDbConnection().Database);
+
             var readings = await _context.MeterReadings
                 .Include(m => m.Tenant)
                 .Include(m => m.Room)
                     .ThenInclude(r => r.Floor!)
                         .ThenInclude(f => f.Building)
                 .OrderByDescending(m => m.ReadingDate)
-                .Take(50)  // Limit to recent readings
+                .Take(50)
                 .ToListAsync();
 
-            var buildings = await _context.Buildings.ToListAsync();
-            ViewBag.Buildings = buildings;
+            // Use only RoomId filter (like Billing)
+            var tenantsWithRooms = await _context.Users
+                .Where(u => u.RoomId.HasValue)
+                .Include(u => u.CurrentRoom!)
+                    .ThenInclude(r => r.Floor!)
+                        .ThenInclude(f => f.Building)
+                .ToListAsync();
+            _logger.LogWarning($"DEBUG: tenantsWithRooms count: {tenantsWithRooms.Count}");
+
+            // Raw SQL query for deep diagnostics
+            var rawUsers = await _context.Users.FromSqlRaw("SELECT * FROM AspNetUsers WHERE RoomId IS NOT NULL").ToListAsync();
+            _logger.LogWarning($"DEBUG: Raw SQL users count: {rawUsers.Count}");
+
+            ViewBag.Tenants = tenantsWithRooms;
+            ViewBag.Buildings = await _context.Buildings.ToListAsync();
             
             return View(readings);
         }
 
         // GET: MeterReading/Create
-        public async Task<IActionResult> Create()
+        public IActionResult Create()
         {
-            var tenants = await _userManager.GetUsersInRoleAsync("Tenant");
-            var tenantsWithRooms = await _context.Users
-                .Where(u => u.RoomId.HasValue && tenants.Select(t => t.Id).Contains(u.Id))
-                .Include(u => u.Room!)
-                    .ThenInclude(r => r.Floor!)
-                        .ThenInclude(f => f.Building)
-                .ToListAsync();
-
-            ViewBag.Tenants = tenantsWithRooms;
-            return View();
+            return RedirectToAction("MeterReadings", "Landlord");
         }
 
         // POST: MeterReading/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(string tenantId, decimal currentReading, DateTime readingDate, string? notes)
+        public IActionResult Create(string tenantId, decimal currentReading, DateTime readingDate, string? notes)
         {
-            try
-            {
-                if (string.IsNullOrEmpty(tenantId))
-                {
-                    ModelState.AddModelError("", "Please select a tenant.");
-                    return View();
-                }
-
-                if (currentReading <= 0)
-                {
-                    ModelState.AddModelError("", "Reading value must be greater than zero.");
-                    return View();
-                }
-
-                var tenant = await _context.Users
-                    .Include(u => u.Room)
-                    .FirstOrDefaultAsync(u => u.Id == tenantId);
-
-                if (tenant == null || !tenant.RoomId.HasValue)
-                {
-                    ModelState.AddModelError("", "Selected tenant does not have an assigned room.");
-                    return View();
-                }
-
-                if (tenant.Room == null)
-                {
-                    ModelState.AddModelError("", "Selected tenant's room information is incomplete.");
-                    return View();
-                }
-
-                // Check if there's already a reading for this tenant/room in the current month
-                var firstDayOfMonth = new DateTime(readingDate.Year, readingDate.Month, 1);
-                var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
-                
-                var existingReading = await _context.MeterReadings
-                    .AnyAsync(m => m.TenantId == tenantId && 
-                                  m.ReadingDate >= firstDayOfMonth && 
-                                  m.ReadingDate <= lastDayOfMonth);
-
-                if (existingReading)
-                {
-                    ModelState.AddModelError("", "A meter reading already exists for this tenant in the selected month.");
-                    return View();
-                }
-
-                // Record the reading
-                var reading = await _meterReadingService.RecordReadingAsync(
-                    tenantId,
-                    tenant.Room.RoomId,
-                    currentReading,
-                    readingDate,
-                    notes);
-
-                TempData["SuccessMessage"] = $"Reading of {reading.CurrentReading} kWh recorded successfully for {tenant.FirstName} {tenant.LastName}.";
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error recording meter reading");
-                ModelState.AddModelError("", $"Error recording meter reading: {ex.Message}");
-                
-                var tenants = await _userManager.GetUsersInRoleAsync("Tenant");
-                var tenantsWithRooms = await _context.Users
-                    .Where(u => u.RoomId.HasValue && tenants.Select(t => t.Id).Contains(u.Id))
-                    .Include(u => u.Room!)
-                        .ThenInclude(r => r.Floor!)
-                            .ThenInclude(f => f.Building)
-                    .ToListAsync();
-
-                ViewBag.Tenants = tenantsWithRooms;
-                return View();
-            }
+            return RedirectToAction("MeterReadings", "Landlord");
         }
 
         // GET: MeterReading/Details/5
@@ -268,14 +204,14 @@ namespace BoardPaySystem.Controllers
         {
             var query = _context.Users
                 .Where(u => u.RoomId.HasValue)
-                .Include(u => u.Room!)
+                .Include(u => u.CurrentRoom!)
                     .ThenInclude(r => r.Floor!)
                         .ThenInclude(f => f.Building)
                 .AsQueryable();
 
             if (buildingId.HasValue)
             {
-                query = query.Where(u => u.Room!.Floor!.BuildingId == buildingId);
+                query = query.Where(u => u.CurrentRoom!.Floor!.BuildingId == buildingId);
             }
 
             var tenants = await query.ToListAsync();
@@ -315,7 +251,7 @@ namespace BoardPaySystem.Controllers
         public async Task<IActionResult> TenantHistory(string id)
         {
             var tenant = await _context.Users
-                .Include(u => u.Room!)
+                .Include(u => u.CurrentRoom!)
                     .ThenInclude(r => r.Floor!)
                         .ThenInclude(f => f.Building)
                 .FirstOrDefaultAsync(u => u.Id == id);

@@ -47,52 +47,87 @@ namespace BoardPaySystem.Services
             }
 
             return billsGenerated;
-        }
-
-        public async Task<Bill> GenerateBillForTenantAsync(string tenantId, DateTime billingDate)
+        }        public async Task<Bill> GenerateBillForTenantAsync(string tenantId, DateTime billingDate)
         {
             // Get tenant with room information
             var tenant = await _context.Users
-                .Include(u => u.Room)
+                .Include(u => u.CurrentRoom)
                     .ThenInclude(r => r != null ? r.Floor : null)
                         .ThenInclude(f => f != null ? f.Building : null)
                 .FirstOrDefaultAsync(u => u.Id == tenantId);
 
-            if (tenant == null || tenant.Room == null)
+            if (tenant == null || tenant.CurrentRoom == null)
             {
                 throw new ArgumentException($"Tenant with ID {tenantId} not found or has no assigned room.");
             }
 
-            if (tenant.Room.Floor == null || tenant.Room.Floor.Building == null)
+            if (tenant.CurrentRoom.Floor == null || tenant.CurrentRoom.Floor.Building == null)
             {
                 throw new ArgumentException($"Tenant with ID {tenantId} has a room with incomplete floor or building data.");
             }
 
-            // Check if this tenant has a meter reading for this billing period
-            var hasReading = await _meterReadingService.HasCompletedReadingForBillingPeriodAsync(tenantId, billingDate);
-
-            if (!hasReading)
+            try
             {
-                _logger.LogWarning("Tenant {TenantId} does not have a meter reading for {BillingPeriod}",
-                    tenantId, billingDate.ToString("yyyy-MM"));
-                throw new InvalidOperationException($"Cannot generate bill for tenant {tenantId}: No meter reading available for {billingDate:yyyy-MM}");
+                // Check if this tenant has a meter reading for this billing period
+                var hasReading = await _meterReadingService.HasCompletedReadingForBillingPeriodAsync(tenantId, billingDate);
+
+                if (!hasReading)
+                {
+                    _logger.LogWarning("Tenant {TenantId} does not have a meter reading for {BillingPeriod}, but proceeding with bill generation",
+                        tenantId, billingDate.ToString("yyyy-MM"));
+                    // Continue with bill generation instead of throwing an exception
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error checking for meter readings for tenant {TenantId}, but proceeding with bill generation", tenantId);
+                // Continue with bill generation despite errors
             }
 
             // Use default values if custom values are not set
-            decimal monthlyRent = tenant.Room.CustomMonthlyRent ?? tenant.Room.Floor.Building.DefaultMonthlyRent;
-            decimal waterFee = tenant.Room.CustomWaterFee ?? tenant.Room.Floor.Building.DefaultWaterFee;
+            decimal monthlyRent = (tenant.CurrentRoom.CustomMonthlyRent.HasValue && tenant.CurrentRoom.CustomMonthlyRent.Value != 0)
+                ? tenant.CurrentRoom.CustomMonthlyRent.Value
+                : ((tenant.CurrentRoom.Floor.Building.DefaultMonthlyRent != 0)
+                    ? tenant.CurrentRoom.Floor.Building.DefaultMonthlyRent
+                    : 5000m);
+            decimal waterFee = (tenant.CurrentRoom.CustomWaterFee.HasValue && tenant.CurrentRoom.CustomWaterFee.Value != 0)
+                ? tenant.CurrentRoom.CustomWaterFee.Value
+                : ((tenant.CurrentRoom.Floor.Building.DefaultWaterFee != 0)
+                    ? tenant.CurrentRoom.Floor.Building.DefaultWaterFee
+                    : 300m);
+            decimal wifiFee = (tenant.CurrentRoom.CustomWifiFee.HasValue && tenant.CurrentRoom.CustomWifiFee.Value != 0)
+                ? tenant.CurrentRoom.CustomWifiFee.Value
+                : ((tenant.CurrentRoom.Floor.Building.DefaultWifiFee != 0)
+                    ? tenant.CurrentRoom.Floor.Building.DefaultWifiFee
+                    : 200m);
 
-            // Calculate electricity fee based on the latest meter reading
-            decimal electricityFee = await _meterReadingService.CalculateElectricityChargeAsync(tenantId, billingDate);
+            // Log a warning if any fee is zero
+            if (monthlyRent == 0 || waterFee == 0 || wifiFee == 0)
+            {
+                _logger.LogWarning($"Bill for tenant {tenantId} has a zero fee: Rent={monthlyRent}, Water={waterFee}, Wifi={wifiFee}. Check building and room settings.");
+            }
 
-            decimal wifiFee = tenant.Room.CustomWifiFee ?? tenant.Room.Floor.Building.DefaultWifiFee;
+            // Only charge if there are at least two readings for the period
+            var firstDayOfMonth = new DateTime(billingDate.Year, billingDate.Month, 1);
+            var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+            var readings = await _context.MeterReadings
+                .Where(m => m.TenantId == tenantId && m.ReadingDate >= firstDayOfMonth && m.ReadingDate <= lastDayOfMonth)
+                .OrderBy(m => m.ReadingDate)
+                .ToListAsync();
+            decimal electricityFee = 0;
+            if (readings.Count >= 2)
+            {
+                electricityFee = readings.Last().TotalCharge;
+            }
 
             // Create new bill using the room's rate information
             var bill = new Bill
             {
                 TenantId = tenantId,
-                RoomId = tenant.Room.RoomId,
+                RoomId = tenant.CurrentRoom.RoomId,
                 BillingDate = billingDate,
+                BillingMonth = billingDate.Month,
+                BillingYear = billingDate.Year,
                 // Calculate due date based on the tenant's start date
                 DueDate = CalculateBillDueDate(tenant.StartDate, billingDate),
                 MonthlyRent = monthlyRent,
@@ -111,40 +146,69 @@ namespace BoardPaySystem.Services
         {
             // Get tenant with room information
             var tenant = await _context.Users
-                .Include(u => u.Room)
+                .Include(u => u.CurrentRoom)
                     .ThenInclude(r => r != null ? r.Floor : null)
                         .ThenInclude(f => f != null ? f.Building : null)
                 .FirstOrDefaultAsync(u => u.Id == tenantId);
             
-            if (tenant == null || tenant.Room == null)
+            if (tenant == null || tenant.CurrentRoom == null)
             {
                 throw new ArgumentException($"Tenant with ID {tenantId} not found or has no assigned room.");
             }
 
-            if (tenant.Room.Floor == null || tenant.Room.Floor.Building == null)
+            if (tenant.CurrentRoom.Floor == null || tenant.CurrentRoom.Floor.Building == null)
             {
                 throw new ArgumentException($"Tenant with ID {tenantId} has a room with incomplete floor or building data.");
             }
             
-            var building = tenant.Room.Floor.Building;
+            var building = tenant.CurrentRoom.Floor.Building;
 
             // For initial bill, we use the tenant's start date
             var firstDayOfMonth = new DateTime(tenant.StartDate.Year, tenant.StartDate.Month, 1);
+
+            // Set due date to one month after start date (e.g., start May 9, due June 9)
+            DateTime dueDate;
+            try {
+                dueDate = tenant.StartDate.AddMonths(1);
+            } catch {
+                var nextMonth = tenant.StartDate.AddMonths(1);
+                dueDate = new DateTime(nextMonth.Year, nextMonth.Month, DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month));
+            }
 
             // Create the bill with proper property names, but without electricity fee
             var bill = new Bill
             {
                 TenantId = tenantId,
-                RoomId = tenant.Room.RoomId,
+                RoomId = tenant.CurrentRoom.RoomId,
                 BillingDate = firstDayOfMonth,
-                DueDate = tenant.StartDate, // Due immediately on start date for initial bill
-                MonthlyRent = tenant.Room.CustomMonthlyRent ?? building.DefaultMonthlyRent,
-                WaterFee = tenant.Room.CustomWaterFee ?? building.DefaultWaterFee,
-                ElectricityFee = 0, // No electricity fee for initial bill
-                WifiFee = tenant.Room.CustomWifiFee ?? building.DefaultWifiFee,
+                BillingMonth = tenant.StartDate.Month,
+                BillingYear = tenant.StartDate.Year,
+                DueDate = dueDate, // Due one month after contract start date
+                MonthlyRent = (tenant.CurrentRoom.CustomMonthlyRent.HasValue && tenant.CurrentRoom.CustomMonthlyRent.Value != 0)
+                    ? tenant.CurrentRoom.CustomMonthlyRent.Value
+                    : ((building.DefaultMonthlyRent != 0)
+                        ? building.DefaultMonthlyRent
+                        : 5000m),
+                WaterFee = (tenant.CurrentRoom.CustomWaterFee.HasValue && tenant.CurrentRoom.CustomWaterFee.Value != 0)
+                    ? tenant.CurrentRoom.CustomWaterFee.Value
+                    : ((building.DefaultWaterFee != 0)
+                        ? building.DefaultWaterFee
+                        : 300m),
+                ElectricityFee = 0, // Disregard electricity fee for now
+                WifiFee = (tenant.CurrentRoom.CustomWifiFee.HasValue && tenant.CurrentRoom.CustomWifiFee.Value != 0)
+                    ? tenant.CurrentRoom.CustomWifiFee.Value
+                    : ((building.DefaultWifiFee != 0)
+                        ? building.DefaultWifiFee
+                        : 200m),
                 Status = BillStatus.NotPaid,
                 Notes = "Initial bill generated on " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
             };
+
+            // Log a warning if any fee is zero for initial bill
+            if (bill.MonthlyRent == 0 || bill.WaterFee == 0 || bill.WifiFee == 0)
+            {
+                _logger.LogWarning($"Initial bill for tenant {tenantId} has a zero fee: Rent={bill.MonthlyRent}, Water={bill.WaterFee}, Wifi={bill.WifiFee}. Check building and room settings.");
+            }
 
             _context.Bills.Add(bill);
             await _context.SaveChangesAsync();
@@ -189,13 +253,35 @@ namespace BoardPaySystem.Services
 
             // Find all bills that are NotPaid or Pending and past due date
             var overdueBills = await _context.Bills
+                .Include(b => b.Room)
+                    .ThenInclude(r => r != null ? r.Floor : null)
+                        .ThenInclude(f => f != null ? f.Building : null)
                 .Where(b => (b.Status == BillStatus.NotPaid || b.Status == BillStatus.Pending) &&
                             b.DueDate < today)
                 .ToListAsync();
 
             foreach (var bill in overdueBills)
             {
-                bill.Status = BillStatus.Overdue;
+                // Only mark as overdue if due date is before today
+                if (bill.DueDate < today && (bill.Status == BillStatus.NotPaid || bill.Status == BillStatus.Pending))
+                {
+                    bill.Status = BillStatus.Overdue;
+
+                    // Calculate and store late fee for each overdue bill
+                    if (bill.Room?.Floor?.Building != null)
+                    {
+                        decimal lateFeePercentage = bill.Room.Floor.Building.LateFee;
+                        decimal calculatedLateFee = bill.TotalAmount * (lateFeePercentage / 100);
+
+                        // Only update the late fee if it's not already set
+                        if (!bill.LateFee.HasValue || bill.LateFee.Value == 0)
+                        {
+                            bill.LateFee = calculatedLateFee;
+                            _logger.LogInformation("Applied late fee of {LateFee:C} to bill {BillId}",
+                                calculatedLateFee, bill.BillId);
+                        }
+                    }
+                }
             }
 
             await _context.SaveChangesAsync();
@@ -295,24 +381,51 @@ namespace BoardPaySystem.Services
         // Helper method to calculate the due date for a bill
         private DateTime CalculateBillDueDate(DateTime startDate, DateTime billingDate)
         {
-            // Set the due date to the same day of the month as the start date
-            try
+            // Due date is the same day as startDate, but in the month after billingDate
+            var dueMonth = billingDate.Month + 1;
+            var dueYear = billingDate.Year;
+            if (dueMonth > 12)
             {
-                return new DateTime(billingDate.Year, billingDate.Month, startDate.Day);
+                dueMonth = 1;
+                dueYear++;
             }
-            catch (ArgumentOutOfRangeException)
-            {
-                // If the day doesn't exist in this month, use the last day of the month
-                return new DateTime(billingDate.Year, billingDate.Month, 1)
-                    .AddMonths(1)
-                    .AddDays(-1);
-            }
+            int dueDay = Math.Min(startDate.Day, DateTime.DaysInMonth(dueYear, dueMonth));
+            return new DateTime(dueYear, dueMonth, dueDay);
         }
 
         // Helper method to determine if this is the tenant's first billing month
         private bool IsFirstBillingMonth(DateTime startDate, DateTime currentDate)
         {
             return startDate.Year == currentDate.Year && startDate.Month == currentDate.Month;
+        }
+
+        // Ensures every tenant has a bill for every month from their start date to now
+        public async Task<int> BackfillBillsForAllTenantsAsync()
+        {
+            int billsGenerated = 0;
+            var tenants = await _context.Users.Where(u => u.RoomId.HasValue).ToListAsync();
+            var today = DateTime.Today;
+            foreach (var tenant in tenants)
+            {
+                var startDate = tenant.StartDate;
+                var currentDate = new DateTime(startDate.Year, startDate.Month, 1);
+                var tenantBills = await _context.Bills.Where(b => b.TenantId == tenant.Id).ToListAsync();
+                var existingBillMonths = tenantBills.Select(b => (b.BillingMonth, b.BillingYear)).ToHashSet();
+                while (currentDate <= today)
+                {
+                    var monthKey = (currentDate.Month, currentDate.Year);
+                    if (!existingBillMonths.Contains(monthKey))
+                    {
+                        await GenerateBillForTenantAsync(tenant.Id, currentDate);
+                        billsGenerated++;
+                        // Update the set after adding
+                        tenantBills = await _context.Bills.Where(b => b.TenantId == tenant.Id).ToListAsync();
+                        existingBillMonths = tenantBills.Select(b => (b.BillingMonth, b.BillingYear)).ToHashSet();
+                    }
+                    currentDate = currentDate.AddMonths(1);
+                }
+            }
+            return billsGenerated;
         }
     }
 }

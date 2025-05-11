@@ -40,10 +40,6 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQmlsbGluZ1xCaWxsRGV0YWlscy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Billing/Bills.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQmlsbGluZ1xCaWxscy5jc2h0bWw=
-build_metadata.AdditionalFiles.CssScope = 
-
 [C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Billing/CreateBill.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQmlsbGluZ1xDcmVhdGVCaWxsLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
@@ -128,8 +124,12 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTGFuZGxvcmRcUmVwb3J0cy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/MeterReading/Create.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTWV0ZXJSZWFkaW5nXENyZWF0ZS5jc2h0bWw=
+[C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Landlord/TenantDetails.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTGFuZGxvcmRcVGVuYW50RGV0YWlscy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Landlord/TenantUnpaidCycles.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTGFuZGxvcmRcVGVuYW50VW5wYWlkQ3ljbGVzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/MeterReading/Details.cshtml]
@@ -144,6 +144,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTWV0ZXJSZWFkaW5nXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/MeterReading/TenantHistory.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTWV0ZXJSZWFkaW5nXFRlbmFudEhpc3RvcnkuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Room/AddRoom.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUm9vbVxBZGRSb29tLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
@@ -154,6 +158,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Room/ManageRooms.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUm9vbVxNYW5hZ2VSb29tcy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Shared/AccessDenied.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXEFjY2Vzc0RlbmllZC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Shared/Error.cshtml]
@@ -194,10 +202,6 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Tenant/History.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVuYW50XEhpc3RvcnkuY3NodG1s
-build_metadata.AdditionalFiles.CssScope = 
-
-[C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Tenant/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVuYW50XEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Tenant/Notifications.cshtml]

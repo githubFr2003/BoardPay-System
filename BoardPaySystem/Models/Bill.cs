@@ -27,6 +27,13 @@ namespace BoardPaySystem.Models
         [Required]
         public DateTime BillingDate { get; set; }
 
+        // Explicitly store billing month and year for easier queries
+        [Required]
+        public int BillingMonth { get; set; }
+
+        [Required]
+        public int BillingYear { get; set; }
+
         [Required]
         public DateTime DueDate { get; set; }
 
@@ -94,5 +101,9 @@ namespace BoardPaySystem.Models
 
         [NotMapped]
         public string? BillNotes => Notes;
+        
+        // Display property for the view
+        [NotMapped]
+        public string BillingPeriod => $"{new DateTime(BillingYear, BillingMonth, 1):MMMM yyyy}";
     }
 }

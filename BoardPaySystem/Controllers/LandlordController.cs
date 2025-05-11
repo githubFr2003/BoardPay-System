@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using System;
+using BoardPaySystem.Services;
 
 namespace BoardPaySystem.Controllers
 {
@@ -16,15 +17,21 @@ namespace BoardPaySystem.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<LandlordController> _logger;
+        private readonly ILandlordService _landlordService;
+        private readonly IBillingService _billingService;
 
         public LandlordController(
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
-            ILogger<LandlordController> logger)
+            ILogger<LandlordController> logger,
+            ILandlordService landlordService,
+            IBillingService billingService)
         {
             _context = context;
             _userManager = userManager;
             _logger = logger;
+            _landlordService = landlordService;
+            _billingService = billingService;
         }
 
         public async Task<IActionResult> Index()
@@ -46,70 +53,28 @@ namespace BoardPaySystem.Controllers
             return View();
         }
 
-        public IActionResult LandlordProfile()
+        public async Task<IActionResult> LandlordProfile()
         {
-            return View();
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+            return View(user);
         }
 
         public async Task<IActionResult> Overview()
         {
-            try
+            var stats = await _landlordService.GetDashboardStatsAsync();
+            foreach (var kvp in stats)
             {
-                // Get counts for the dashboard
-                ViewBag.BuildingsCount = await _context.Buildings.CountAsync();
-                ViewBag.FloorsCount = await _context.Floors.CountAsync();
-                ViewBag.RoomsCount = await _context.Rooms.CountAsync();
-                ViewBag.TenantsCount = (await _userManager.GetUsersInRoleAsync("Tenant")).Count;
-
-                // Room status
-                ViewBag.TotalRooms = await _context.Rooms.CountAsync();
-                ViewBag.OccupiedRooms = await _context.Rooms.Where(r => r.IsOccupied).CountAsync();
-                ViewBag.VacantRooms = ViewBag.TotalRooms - ViewBag.OccupiedRooms;
-                ViewBag.OccupancyRate = ViewBag.TotalRooms > 0 
-                    ? (ViewBag.OccupiedRooms * 100.0 / ViewBag.TotalRooms).ToString("F1") 
-                    : "0.0";
-
-                // Contracts
-                var today = DateTime.Today;
-                var thirtyDaysFromNow = today.AddDays(30);
-                ViewBag.ActiveContracts = await _context.Contracts
-                    .Where(c => c.Status == ContractStatus.Active)
-                    .CountAsync();
-                ViewBag.ExpiringContracts = await _context.Contracts
-                    .Where(c => c.Status == ContractStatus.Active && c.EndDate <= thirtyDaysFromNow)
-                    .CountAsync();
-
-                // Billing status for current month
-                var currentMonth = DateTime.Today.Month;
-                var currentYear = DateTime.Today.Year;
-                var monthlyBills = await _context.Bills
-                    .Where(b => b.BillingDate.Month == currentMonth && b.BillingDate.Year == currentYear)
-                    .ToListAsync();
-
-                ViewBag.TotalBills = monthlyBills.Count;
-                ViewBag.PaidBills = monthlyBills.Count(b => b.Status == BillStatus.Paid);
-                ViewBag.PendingBills = monthlyBills.Count(b => b.Status == BillStatus.Pending);
-                ViewBag.OverdueBills = monthlyBills.Count(b => b.Status == BillStatus.Overdue);
-
-                // Calculate total amounts
-                ViewBag.TotalBilledAmount = monthlyBills.Sum(b => b.TotalAmount).ToString("C");
-                ViewBag.TotalPaidAmount = monthlyBills
-                    .Where(b => b.Status == BillStatus.Paid)
-                    .Sum(b => b.TotalAmount)
-                    .ToString("C");
-                ViewBag.TotalPendingAmount = monthlyBills
-                    .Where(b => b.Status == BillStatus.Pending || b.Status == BillStatus.Overdue)
-                    .Sum(b => b.TotalAmount)
-                    .ToString("C");
-
-                return View();
+                ViewData[kvp.Key] = kvp.Value;
             }
-            catch (Exception ex)
+            if (stats.ContainsKey("Error"))
             {
-                _logger.LogError(ex, "Error in Overview action: {Message}", ex.Message);
-                TempData["Error"] = "An error occurred while loading the dashboard. Please try again.";
-                return View();
+                TempData["Error"] = stats["Error"];
             }
+            return View();
         }
 
         public async Task<IActionResult> ManageBuildings()
@@ -130,19 +95,55 @@ namespace BoardPaySystem.Controllers
 
         public async Task<IActionResult> Billing()
         {
-            // Get all bills with related data, including building information for filtering
+            // Ensure every tenant has a bill for every month from their start date to now
+            await _billingService.BackfillBillsForAllTenantsAsync();
+
+            // Update bill statuses (overdue, etc)
+            await _billingService.UpdateBillStatusesAsync();
+
+            // Get all bills with related data
             var bills = await _context.Bills
                 .Include(b => b.Tenant)
                 .Include(b => b.Room)
-                    .ThenInclude(r => r.Floor != null ? r.Floor : null)
-                        .ThenInclude(f => f != null ? f.Building : null)
                 .OrderByDescending(b => b.DueDate)
                 .ToListAsync();
-            
-            // Get all buildings for the filter dropdown
-            ViewBag.Buildings = await _context.Buildings.ToListAsync();
-                
-            return View(bills);
+
+            // Group bills by tenant
+            var billsByTenant = bills.GroupBy(b => b.TenantId).ToDictionary(g => g.Key, g => g.ToList());
+
+            // Prepare summary for tenants with multiple unpaid bills
+            var tenantsWithMultipleUnpaidBills = new List<ApplicationUser>();
+            var tenantsWithOnlyCurrentUnpaidBill = new List<ApplicationUser>();
+            var tenantTotalAmountsDue = new Dictionary<string, decimal>();
+            var tenantUnpaidBillCount = new Dictionary<string, int>();
+
+            foreach (var kvp in billsByTenant)
+            {
+                var tenantBills = kvp.Value;
+                var unpaidBills = tenantBills.Where(b => b.Status != BillStatus.Paid && b.Status != BillStatus.Cancelled).ToList();
+                var tenant = tenantBills.First().Tenant;
+                if (unpaidBills.Count > 1)
+                {
+                    tenantsWithMultipleUnpaidBills.Add(tenant);
+                }
+                else if (unpaidBills.Count == 1)
+                {
+                    tenantsWithOnlyCurrentUnpaidBill.Add(tenant);
+                }
+                if (unpaidBills.Count > 0)
+                {
+                    tenantTotalAmountsDue[tenant.Id] = unpaidBills.Sum(b => b.TotalAmount + (b.LateFee ?? 0));
+                    tenantUnpaidBillCount[tenant.Id] = unpaidBills.Count;
+                }
+            }
+
+            ViewBag.TenantsWithMultipleUnpaidBills = tenantsWithMultipleUnpaidBills;
+            ViewBag.TenantsWithOnlyCurrentUnpaidBill = tenantsWithOnlyCurrentUnpaidBill;
+            ViewBag.BillsByTenant = billsByTenant;
+            ViewBag.TenantTotalAmountsDue = tenantTotalAmountsDue;
+            ViewBag.TenantUnpaidBillCount = tenantUnpaidBillCount;
+
+            return View();
         }
 
         public async Task<IActionResult> AddTenant()
@@ -243,41 +244,8 @@ namespace BoardPaySystem.Controllers
         {
             try
             {
-                // Get the tenant with room and building information
-                var tenant = await _context.Users
-                    .Include(u => u.Room)
-                        .ThenInclude(r => r.Floor)
-                            .ThenInclude(f => f.Building)
-                    .FirstOrDefaultAsync(u => u.Id == tenantId);
-                    
-                if (tenant == null || tenant.Room == null || tenant.Room.Floor == null || tenant.Room.Floor.Building == null)
-                {
-                    _logger.LogError("Cannot generate initial bill: Tenant {TenantId}, room, or building information not found", tenantId);
-                    return;
-                }
-                
-                var building = tenant.Room.Floor.Building;
-                var today = DateTime.Today;
-                var firstDayOfMonth = new DateTime(today.Year, today.Month, 1);
-                
-                // Create the bill with proper property names
-                var bill = new Bill
-                {
-                    TenantId = tenantId,
-                    RoomId = tenant.Room.RoomId,
-                    BillingDate = firstDayOfMonth,
-                    DueDate = new DateTime(today.Year, today.Month, tenant.StartDate.Day),
-                    MonthlyRent = tenant.Room.CustomMonthlyRent ?? building.DefaultMonthlyRent,
-                    WaterFee = tenant.Room.CustomWaterFee ?? building.DefaultWaterFee,
-                    ElectricityFee = 0, // Will be calculated based on meter readings
-                    WifiFee = tenant.Room.CustomWifiFee ?? building.DefaultWifiFee,
-                    Status = BillStatus.NotPaid,
-                    Notes = "Initial bill generated on " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
-                };
-                
-                _context.Bills.Add(bill);
-                await _context.SaveChangesAsync();
-                _logger.LogInformation("Initial bill {BillId} created for tenant {TenantId}", bill.BillId, tenantId);
+                // Use BillingService for initial bill (ensures fallback logic)
+                await _billingService.GenerateInitialBillForTenantAsync(tenantId);
             }
             catch (Exception ex)
             {
@@ -289,37 +257,26 @@ namespace BoardPaySystem.Controllers
         {
             try
             {
-                // First, get the IDs of all users with the 'Tenant' role
+                // Get all users with the 'Tenant' role
                 var tenantUsers = await _userManager.GetUsersInRoleAsync("Tenant");
                 var tenantIds = tenantUsers.Select(t => t.Id).ToList();
-                
-                // Then query the users with those IDs and include related data
+                // Query the users with those IDs and include related data
                 var tenantsWithDetails = await _context.Users
                     .Where(u => tenantIds.Contains(u.Id))
-                    .Include(u => u.Room)
+                    .Include(u => u.CurrentRoom)
+                    .ThenInclude(r => r.Floor)
+                    .ThenInclude(f => f.Building)
                     .ToListAsync();
 
-                // Load additional data for each tenant
-                foreach (var tenant in tenantsWithDetails)
-                {
-                    if (tenant.Room != null)
-                    {
-                        // Load the Floor explicitly
-                        await _context.Entry(tenant.Room)
-                            .Reference(r => r.Floor)
-                            .LoadAsync();
-                        
-                        // If Floor exists, load its Building
-                        if (tenant.Room.Floor != null)
-                        {
-                            await _context.Entry(tenant.Room.Floor)
-                                .Reference(f => f.Building)
-                                .LoadAsync();
-                        }
-                    }
-                }
-
-                ViewBag.Buildings = await _context.Buildings.ToListAsync();
+                // Find tenants missing meter readings for the current month
+                var now = DateTime.Now;
+                var firstDayOfMonth = new DateTime(now.Year, now.Month, 1);
+                var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+                var tenantsWithMissingReadings = tenantsWithDetails
+                    .Where(t => t.CurrentRoom != null && !_context.MeterReadings.Any(m => m.TenantId == t.Id && m.ReadingDate >= firstDayOfMonth && m.ReadingDate <= lastDayOfMonth))
+                    .Select(t => new { TenantName = t.FirstName + " " + t.LastName, RoomNumber = t.CurrentRoom.RoomNumber })
+                    .ToList();
+                ViewBag.MissingReadings = tenantsWithMissingReadings;
                 return View(tenantsWithDetails);
             }
             catch (Exception ex)
@@ -330,9 +287,86 @@ namespace BoardPaySystem.Controllers
             }
         }
 
-        public IActionResult MeterReadings()
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerateBills()
         {
-            return View();
+            await _billingService.GenerateMonthlyBillsAsync(DateTime.Now);
+            TempData["Success"] = "Monthly bills generated successfully!";
+            return RedirectToAction("ManageTenants");
+        }
+
+        public async Task<IActionResult> MeterReadings()
+        {
+            var tenantsWithRooms = await _context.Users
+                .Where(u => u.RoomId.HasValue)
+                .Include(u => u.CurrentRoom!)
+                    .ThenInclude(r => r.Floor!)
+                        .ThenInclude(f => f.Building)
+                .ToListAsync();
+            ViewBag.Tenants = tenantsWithRooms;
+            // Build a dictionary of rates per tenant
+            var tenantRates = tenantsWithRooms.ToDictionary(
+                t => t.Id,
+                t => t.CurrentRoom?.CustomElectricityFee ?? t.CurrentRoom?.Floor?.Building?.DefaultElectricityFee ?? 0
+            );
+            ViewBag.TenantRates = tenantRates;
+            // Load the 20 most recent meter readings
+            var recentReadings = await _context.MeterReadings
+                .Include(m => m.Tenant)
+                .Include(m => m.Room)
+                    .ThenInclude(r => r.Floor!)
+                        .ThenInclude(f => f.Building)
+                .OrderByDescending(m => m.ReadingDate)
+                .Take(20)
+                .ToListAsync();
+            return View(recentReadings);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MeterReadings(string tenantId, decimal currentReading, DateTime readingDate, string? notes)
+        {
+            // Check if a reading already exists for this tenant in the selected month
+            var firstDayOfMonth = new DateTime(readingDate.Year, readingDate.Month, 1);
+            var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+            var existingReading = await _context.MeterReadings
+                .AnyAsync(m => m.TenantId == tenantId && m.ReadingDate >= firstDayOfMonth && m.ReadingDate <= lastDayOfMonth);
+            if (existingReading)
+            {
+                TempData["ErrorMessage"] = "A meter reading already exists for this tenant in the selected month.";
+                return RedirectToAction("MeterReadings");
+            }
+            // Add the new reading
+            var tenant = await _context.Users
+                .Include(u => u.CurrentRoom)
+                    .ThenInclude(r => r.Floor)
+                        .ThenInclude(f => f.Building)
+                .FirstOrDefaultAsync(u => u.Id == tenantId);
+            if (tenant == null || tenant.CurrentRoom == null)
+            {
+                TempData["ErrorMessage"] = "Selected tenant or room not found.";
+                return RedirectToAction("MeterReadings");
+            }
+            // Find the most recent previous reading for this tenant
+            var previousReadingEntity = await _context.MeterReadings
+                .Where(m => m.TenantId == tenantId)
+                .OrderByDescending(m => m.ReadingDate)
+                .FirstOrDefaultAsync();
+            var reading = new MeterReading
+            {
+                TenantId = tenantId,
+                RoomId = tenant.CurrentRoom.RoomId,
+                ReadingDate = readingDate,
+                CurrentReading = currentReading,
+                PreviousReading = previousReadingEntity != null ? previousReadingEntity.CurrentReading : (decimal?)null,
+                RatePerKwh = tenant.CurrentRoom.CustomElectricityFee ?? tenant.CurrentRoom.Floor.Building.DefaultElectricityFee,
+                Notes = notes
+            };
+            _context.MeterReadings.Add(reading);
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Meter reading recorded successfully.";
+            return RedirectToAction("MeterReadings");
         }
 
         public IActionResult Reports()
@@ -372,12 +406,9 @@ namespace BoardPaySystem.Controllers
             try
             {
                 _logger.LogInformation("Starting deletion of building with ID {0}", id);
-                
-                // First, load the building with its related entities
+                  // First, load the building with its related entities
                 var building = await _context.Buildings
-                    .Include(b => b.Floors)
-                        .ThenInclude(f => f.Rooms)
-                            .ThenInclude(r => r.CurrentTenant)
+                    .Include("Floors.Rooms.CurrentTenant") // Using string-based include to avoid null reference errors
                     .Include(b => b.Tenants)
                     .FirstOrDefaultAsync(b => b.BuildingId == id);
 
@@ -771,72 +802,50 @@ namespace BoardPaySystem.Controllers
             {
                 return NotFound();
             }
+            
+            // Do not overwrite tenant.StartDate; just use the value from the database
 
             return View(tenant);
         }
 
         [HttpPost]
-        public async Task<IActionResult> EditTenant(string id, ApplicationUser tenant)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditTenant(
+            string Id,
+            string FirstName,
+            string LastName,
+            string UserName,
+            string Password,
+            string ConfirmPassword,
+            string PhoneNumber,
+            string StartDate)
         {
-            if (id != tenant.Id)
+            var tenant = await _userManager.FindByIdAsync(Id);
+            if (tenant == null)
+                return Json(new { success = false, message = "Tenant not found." });
+            if (string.IsNullOrWhiteSpace(FirstName) || string.IsNullOrWhiteSpace(LastName) || string.IsNullOrWhiteSpace(UserName) || string.IsNullOrWhiteSpace(PhoneNumber) || string.IsNullOrWhiteSpace(StartDate))
+                return Json(new { success = false, message = "All fields are required." });
+            tenant.FirstName = FirstName;
+            tenant.LastName = LastName;
+            tenant.UserName = UserName;
+            tenant.NormalizedUserName = UserName.ToUpperInvariant();
+            tenant.PhoneNumber = PhoneNumber;
+            if (DateTime.TryParse(StartDate, out var parsedDate))
+                tenant.StartDate = parsedDate;
+            // Change password if provided
+            if (!string.IsNullOrWhiteSpace(Password) || !string.IsNullOrWhiteSpace(ConfirmPassword))
             {
-                return NotFound();
+                if (Password != ConfirmPassword)
+                    return Json(new { success = false, message = "Passwords do not match." });
+                var token = await _userManager.GeneratePasswordResetTokenAsync(tenant);
+                var result = await _userManager.ResetPasswordAsync(tenant, token, Password);
+                if (!result.Succeeded)
+                    return Json(new { success = false, message = string.Join("; ", result.Errors.Select(e => e.Description)) });
             }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    var existingTenant = await _userManager.FindByIdAsync(id);
-                    if (existingTenant == null)
-                    {
-                        return NotFound();
-                    }
-                    
-                    var isTenant = await _userManager.IsInRoleAsync(existingTenant, "Tenant");
-                    if (!isTenant)
-                    {
-                        return NotFound();
-                    }
-
-                    // Check if any changes were made
-                    if (existingTenant.FirstName == tenant.FirstName &&
-                        existingTenant.LastName == tenant.LastName &&
-                        existingTenant.PhoneNumber == tenant.PhoneNumber &&
-                        existingTenant.StartDate == tenant.StartDate)
-                    {
-                        TempData["Info"] = "No changes were made to the tenant.";
-                        return RedirectToAction(nameof(ManageTenants));
-                    }
-
-                    // Update user properties
-                    existingTenant.FirstName = tenant.FirstName;
-                    existingTenant.LastName = tenant.LastName;
-                    existingTenant.PhoneNumber = tenant.PhoneNumber;
-                    existingTenant.StartDate = tenant.StartDate;
-                    
-                    _logger.LogInformation("Updating tenant {Id} with StartDate {StartDate}", 
-                        existingTenant.Id, existingTenant.StartDate.ToString("yyyy-MM-dd"));
-
-                    var result = await _userManager.UpdateAsync(existingTenant);
-                    if (result.Succeeded)
-                    {
-                        TempData["Success"] = "Tenant updated successfully!";
-                        return RedirectToAction(nameof(ManageTenants));
-                    }
-
-                    foreach (var error in result.Errors)
-                    {
-                        ModelState.AddModelError("", error.Description);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error updating tenant: {ErrorMessage}", ex.Message);
-                    ModelState.AddModelError("", "Error updating tenant. Please try again.");
-                }
-            }
-            return View(tenant);
+            var updateResult = await _userManager.UpdateAsync(tenant);
+            if (updateResult.Succeeded)
+                return Json(new { success = true, message = "Tenant updated successfully." });
+            return Json(new { success = false, message = string.Join("; ", updateResult.Errors.Select(e => e.Description)) });
         }
 
         [HttpPost]
@@ -861,6 +870,10 @@ namespace BoardPaySystem.Controllers
                     return Json(new { success = false, message = "User is not a tenant." });
                 }
 
+                // Delete meter readings
+                var readings = await _context.MeterReadings.Where(m => m.TenantId == id).ToListAsync();
+                _context.MeterReadings.RemoveRange(readings);
+                
                 // Delete bills
                 var bills = await _context.Bills.Where(b => b.TenantId == id).ToListAsync();
                 _context.Bills.RemoveRange(bills);
@@ -904,10 +917,8 @@ namespace BoardPaySystem.Controllers
         public async Task<IActionResult> BuildingDetails(int id)
         {
             try
-            {
-                var building = await _context.Buildings
-                    .Include(b => b.Floors)
-                        .ThenInclude(f => f.Rooms)
+            {                var building = await _context.Buildings
+                    .Include("Floors.Rooms") // Using string-based include to avoid null reference errors
                     .FirstOrDefaultAsync(b => b.BuildingId == id);
 
                 if (building == null)
@@ -1062,6 +1073,335 @@ namespace BoardPaySystem.Controllers
                 TempData["Error"] = "A critical error occurred: " + ex.Message;
                 return RedirectToAction(nameof(Index));
             }
+        }
+
+        // GET: /Landlord/TenantBills/id
+        public async Task<IActionResult> TenantBills(string id)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(id))
+                {
+                    _logger.LogWarning("TenantBills called with null or empty id");
+                    TempData["Error"] = "Tenant ID is required";
+                    return RedirectToAction(nameof(ManageTenants));
+                }
+                  // Find tenant by ID
+                var tenant = await _context.Users
+                    .Include("Room.Floor.Building") // Using string-based include to avoid null reference errors
+                    .FirstOrDefaultAsync(u => u.Id == id);
+                
+                if (tenant == null)
+                {
+                    _logger.LogWarning("Tenant with ID {0} not found", id);
+                    TempData["Error"] = "Tenant not found";
+                    return RedirectToAction(nameof(ManageTenants));
+                }
+                
+                // Get all bills for this tenant
+                var bills = await _context.Bills
+                    .Include(b => b.Room)
+                    .Where(b => b.TenantId == id)
+                    .OrderByDescending(b => b.BillingYear)
+                    .ThenByDescending(b => b.BillingMonth)
+                    .ToListAsync();
+                
+                // Calculate total amount due and unpaid months
+                var unpaidBills = bills
+                    .Where(b => b.Status != BillStatus.Paid && b.Status != BillStatus.Cancelled)
+                    .ToList();
+                
+                decimal totalDue = unpaidBills.Sum(b => b.TotalAmount);
+                
+                // Group bills by month and year for the view
+                var billsByMonth = bills
+                    .GroupBy(b => new { b.BillingMonth, b.BillingYear })
+                    .ToDictionary(g => g.Key, g => g.ToList());
+                
+                // Count distinct unpaid months
+                var unpaidMonths = unpaidBills
+                    .Select(b => new { b.BillingMonth, b.BillingYear })
+                    .Distinct()
+                    .Count();
+                
+                // Pass data to view
+                ViewBag.Tenant = tenant;
+                ViewBag.BillsByMonth = billsByMonth;
+                ViewBag.TotalDue = totalDue;
+                ViewBag.UnpaidMonths = unpaidMonths;
+                
+                return View(bills);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in TenantBills action: {0}", ex.Message);
+                TempData["Error"] = "An error occurred while loading tenant bills.";
+                return RedirectToAction(nameof(ManageTenants));
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GeneratePastBillsForTenant(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return NotFound();
+            }            var tenant = await _context.Users
+                .Include("Room.Floor.Building") // Using string-based include to avoid null reference errors
+                .FirstOrDefaultAsync(u => u.Id == id);
+
+            if (tenant == null || tenant.CurrentRoom == null)
+            {
+                TempData["Error"] = "Tenant not found or has no room assigned.";
+                return RedirectToAction("ManageTenants");
+            }
+
+            try
+            {
+                // Get the tenant's start date
+                var startDate = tenant.StartDate;
+                
+                // Get today's date
+                var today = DateTime.Today;
+                
+                // Get existing bills to avoid duplicates
+                var existingBills = await _context.Bills
+                    .Where(b => b.TenantId == id)
+                    .Select(b => new { b.BillingMonth, b.BillingYear })
+                    .ToListAsync();
+                
+                var existingBillMonths = existingBills
+                    .Select(b => new { b.BillingMonth, b.BillingYear })
+                    .ToHashSet();
+                
+                // Generate bills from start date until now (one per month)
+                var currentDate = new DateTime(startDate.Year, startDate.Month, 1);
+                int billsGenerated = 0;
+                
+                while (currentDate <= today)
+                {
+                    // Check if bill already exists for this month/year
+                    var monthKey = new { BillingMonth = currentDate.Month, BillingYear = currentDate.Year };
+                    
+                    if (!existingBillMonths.Contains(monthKey))
+                    {
+                        // Calculate the due date (same day as start date)
+                        var dueDate = new DateTime(currentDate.Year, currentDate.Month, 
+                            Math.Min(startDate.Day, DateTime.DaysInMonth(currentDate.Year, currentDate.Month)));
+                          // Create the bill                        // Get building safely
+                        var building = tenant.CurrentRoom.Floor.Building ?? new Building
+                        {
+                            DefaultMonthlyRent = 5000, // Default values if building not found
+                            DefaultWaterFee = 300,
+                            DefaultElectricityFee = 500,
+                            DefaultWifiFee = 200,
+                            LateFee = 5
+                        };
+                        
+                        var bill = new Bill
+                        {
+                            TenantId = tenant.Id,
+                            RoomId = tenant.RoomId.Value,
+                            BillingDate = currentDate,
+                            BillingMonth = currentDate.Month,
+                            BillingYear = currentDate.Year,
+                            DueDate = dueDate,
+                            MonthlyRent = tenant.CurrentRoom?.CustomMonthlyRent ?? building.DefaultMonthlyRent,
+                            WaterFee = tenant.CurrentRoom?.CustomWaterFee ?? building.DefaultWaterFee,
+                            ElectricityFee = 0,
+                            WifiFee = tenant.CurrentRoom?.CustomWifiFee ?? building.DefaultWifiFee,
+                            Status = BillStatus.NotPaid
+                        };
+                        
+                        // Add late fee for past due dates                        if (dueDate < today)
+                        {
+                            bill.Status = BillStatus.Overdue;
+                            decimal lateFeePercentage = building.LateFee;
+                            bill.LateFee = bill.TotalAmount * (lateFeePercentage / 100);
+                        }
+                        
+                        _context.Bills.Add(bill);
+                        billsGenerated++;
+                    }
+                    
+                    // Move to next month
+                    currentDate = currentDate.AddMonths(1);
+                }
+                
+                await _context.SaveChangesAsync();
+                TempData["Success"] = $"Successfully generated {billsGenerated} past bills for {tenant.FirstName} {tenant.LastName}.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating past bills for tenant {TenantId}", id);
+                TempData["Error"] = $"Error generating past bills: {ex.Message}";
+            }
+            
+            return RedirectToAction("TenantBills", new { id });
+        }
+
+        // DEBUG: Check navigation property status for a tenant
+        [HttpGet]
+        public async Task<IActionResult> DebugTenantNav(string id)
+        {
+            var tenant = await _context.Users
+                .Include(u => u.CurrentRoom)
+                    .ThenInclude(r => r.Floor)
+                        .ThenInclude(f => f.Building)
+                .FirstOrDefaultAsync(u => u.Id == id);
+
+            if (tenant == null)
+            {
+                return Content($"Tenant not found for id: {id}");
+            }
+
+            var room = tenant.CurrentRoom;
+            var floor = room?.Floor;
+            var building = floor?.Building;
+
+            string debugInfo = $@"Tenant: {tenant.FirstName} {tenant.LastName} (ID: {tenant.Id})\n" +
+                $"RoomId: {tenant.RoomId}\n" +
+                $"CurrentRoom: {(room != null ? room.RoomNumber : "null")}\n" +
+                $"FloorId: {(room != null ? room.FloorId.ToString() : "null")}\n" +
+                $"Floor: {(floor != null ? floor.FloorName : "null")}\n" +
+                $"BuildingId: {(floor != null ? floor.BuildingId.ToString() : "null")}\n" +
+                $"Building: {(building != null ? building.BuildingName : "null")}\n" +
+                $"DefaultMonthlyRent: {(building != null ? building.DefaultMonthlyRent.ToString() : "null")}\n" +
+                $"DefaultWaterFee: {(building != null ? building.DefaultWaterFee.ToString() : "null")}\n" +
+                $"DefaultWifiFee: {(building != null ? building.DefaultWifiFee.ToString() : "null")}\n" +
+                $"CustomMonthlyRent: {(room != null && room.CustomMonthlyRent.HasValue ? room.CustomMonthlyRent.Value.ToString() : "null")}\n" +
+                $"CustomWaterFee: {(room != null && room.CustomWaterFee.HasValue ? room.CustomWaterFee.Value.ToString() : "null")}\n" +
+                $"CustomWifiFee: {(room != null && room.CustomWifiFee.HasValue ? room.CustomWifiFee.Value.ToString() : "null")}\n";
+
+            return Content(debugInfo, "text/plain");
+        }
+
+        // GET: /Landlord/TenantUnpaidCycles/id
+        public async Task<IActionResult> TenantUnpaidCycles(string id)
+        {
+            _logger.LogInformation("TenantUnpaidCycles called with id={Id}", id);
+            if (string.IsNullOrEmpty(id))
+            {
+                TempData["Error"] = "Tenant ID is required";
+                return RedirectToAction(nameof(ManageTenants));
+            }
+            var tenant = await _context.Users
+                .Include(u => u.CurrentRoom)
+                    .ThenInclude(r => r.Floor)
+                        .ThenInclude(f => f.Building)
+                .FirstOrDefaultAsync(u => u.Id == id);
+            if (tenant == null)
+            {
+                _logger.LogWarning("TenantUnpaidCycles: Tenant not found for id={Id}", id);
+                TempData["Error"] = "Tenant not found";
+                return RedirectToAction(nameof(ManageTenants));
+            }
+            var today = DateTime.Today;
+            var bills = await _context.Bills
+                .Include(b => b.Room)
+                .Where(b => b.TenantId == id && b.Status != BillStatus.Paid && b.Status != BillStatus.Cancelled)
+                .OrderByDescending(b => b.BillingYear)
+                .ThenByDescending(b => b.BillingMonth)
+                .ToListAsync();
+
+            var displayBills = bills.OrderByDescending(b => b.DueDate).ToList();
+
+            ViewBag.Tenant = tenant;
+            return View("TenantUnpaidCycles", displayBills);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(string currentPassword, string newPassword, string confirmPassword)
+        {
+            if (string.IsNullOrWhiteSpace(currentPassword) || string.IsNullOrWhiteSpace(newPassword) || string.IsNullOrWhiteSpace(confirmPassword))
+            {
+                return Json(new { success = false, message = "All fields are required." });
+            }
+            if (newPassword != confirmPassword)
+            {
+                return Json(new { success = false, message = "New passwords do not match." });
+            }
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return Json(new { success = false, message = "User not found." });
+            var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+            if (result.Succeeded)
+                return Json(new { success = true, message = "Password changed successfully." });
+            var errorMsg = string.Join(" ", result.Errors.Select(e => e.Description));
+            return Json(new { success = false, message = errorMsg });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateProfile(string firstName, string lastName, string phoneNumber, string userName)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return Json(new { success = false, message = "User not found." });
+            if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName) || string.IsNullOrWhiteSpace(phoneNumber) || string.IsNullOrWhiteSpace(userName))
+                return Json(new { success = false, message = "All fields are required." });
+            user.FirstName = firstName;
+            user.LastName = lastName;
+            user.PhoneNumber = phoneNumber;
+            user.UserName = userName;
+            user.NormalizedUserName = userName.ToUpperInvariant();
+            var result = await _userManager.UpdateAsync(user);
+            if (result.Succeeded)
+                return Json(new { success = true, message = "Profile updated successfully." });
+            return Json(new { success = false, message = string.Join("; ", result.Errors.Select(e => e.Description)) });
+        }
+
+        public async Task<IActionResult> TenantDetails(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+                return NotFound();
+            var tenant = await _context.Users
+                .Include(u => u.CurrentRoom)
+                .ThenInclude(r => r.Floor)
+                .ThenInclude(f => f.Building)
+                .FirstOrDefaultAsync(u => u.Id == id);
+            if (tenant == null)
+                return NotFound();
+            // Optionally, load all buildings/floors/rooms for move modal
+            ViewBag.Buildings = await _context.Buildings.Include(b => b.Floors).ThenInclude(f => f.Rooms).ToListAsync();
+            return View(tenant);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MoveTenant(string tenantId, int buildingId, int floorId, int roomId, string startDate)
+        {
+            if (string.IsNullOrEmpty(tenantId))
+                return Json(new { success = false, message = "Invalid tenant." });
+            var tenant = await _context.Users.Include(u => u.CurrentRoom).FirstOrDefaultAsync(u => u.Id == tenantId);
+            if (tenant == null)
+                return Json(new { success = false, message = "Tenant not found." });
+            var oldRoom = tenant.CurrentRoom;
+            var newRoom = await _context.Rooms.Include(r => r.Floor).FirstOrDefaultAsync(r => r.RoomId == roomId);
+            if (newRoom == null || newRoom.IsOccupied)
+                return Json(new { success = false, message = "Selected room is not available." });
+            // Update old room
+            if (oldRoom != null)
+            {
+                oldRoom.IsOccupied = false;
+                oldRoom.CurrentTenant = null;
+                _context.Update(oldRoom);
+            }
+            // Update new room
+            newRoom.IsOccupied = true;
+            newRoom.CurrentTenant = tenant;
+            _context.Update(newRoom);
+            // Update tenant
+            tenant.RoomId = newRoom.RoomId;
+            tenant.BuildingId = newRoom.Floor?.BuildingId;
+            if (!string.IsNullOrWhiteSpace(startDate) && DateTime.TryParse(startDate, out var parsedDate))
+                tenant.StartDate = parsedDate;
+            _context.Update(tenant);
+            await _context.SaveChangesAsync();
+            // Generate new bill for new room
+            await _billingService.GenerateInitialBillForTenantAsync(tenant.Id);
+            return Json(new { success = true, message = "Tenant moved and new bill generated." });
         }
     }
 }

@@ -231,14 +231,33 @@ C:\Users\User\source\repos\BoardPaySystem - Copy\BoardPaySystem\obj\Debug\net9.0
 C:\Users\User\source\repos\BoardPaySystem - Copy\BoardPaySystem\obj\Debug\net9.0\staticwebassets.upToDateCheck.txt
 C:\Users\User\source\repos\BoardPaySystem - Copy\BoardPaySystem\obj\Debug\net9.0\compressed\h7rear5xxc-482hxzb426.gz
 C:\Users\User\source\repos\BoardPaySystem - Copy\BoardPaySystem\obj\Debug\net9.0\compressed\dm792kjgc6-9okdee9b04.gz
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\BoardPaySystem.exe
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\BoardPaySystem.dll
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.AspNetCore.Identity.UI.dll
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.dll
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Abstractions.dll
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Relational.dll
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.SqlServer.dll
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.Identity.Client.dll
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.SqlServer.Server.dll
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\System.Configuration.ConfigurationManager.dll
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\runtimes\win\lib\net6.0\Microsoft.Data.SqlClient.dll
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\runtimes\win-x64\native\Microsoft.Data.SqlClient.SNI.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\appsettings.Development.json
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\appsettings.json
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\add_bill_month_year_columns.sql
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\add_migration_record.sql
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\add_startdate_column.sql
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\create_meter_readings_table.sql
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\db_schema.sql
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\migration.sql
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\reset_database.sql
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\update_bills_columns.sql
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\BoardPaySystem.staticwebassets.runtime.json
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\BoardPaySystem.staticwebassets.endpoints.json
-C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\BoardPaySystem.exe
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\BoardPaySystem.deps.json
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\BoardPaySystem.runtimeconfig.json
-C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\BoardPaySystem.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\BoardPaySystem.pdb
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Azure.Core.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Azure.Identity.dll
@@ -246,8 +265,6 @@ C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\BCrypt
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Humanizer.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.AspNetCore.Cryptography.Internal.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.AspNetCore.Cryptography.KeyDerivation.dll
-C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
-C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.AspNetCore.Identity.UI.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.AspNetCore.Razor.Language.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.Bcl.AsyncInterfaces.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.Build.dll
@@ -268,11 +285,7 @@ C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Micros
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.Data.SqlClient.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.DiaSymReader.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.DotNet.Scaffolding.Shared.dll
-C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.dll
-C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Abstractions.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Design.dll
-C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Relational.dll
-C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.SqlServer.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.Extensions.Caching.Abstractions.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.Extensions.Caching.Memory.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.Extensions.Configuration.Abstractions.dll
@@ -287,7 +300,6 @@ C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Micros
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.Extensions.Logging.Abstractions.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.Extensions.Options.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.Extensions.Primitives.dll
-C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.Identity.Client.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.Identity.Client.Extensions.Msal.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.IdentityModel.Abstractions.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.IdentityModel.JsonWebTokens.dll
@@ -296,7 +308,6 @@ C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Micros
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.IdentityModel.Tokens.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.NET.StringTools.dll
-C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.SqlServer.Server.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.VisualStudio.Web.CodeGeneration.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\Microsoft.VisualStudio.Web.CodeGeneration.Core.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\dotnet-aspnet-codegenerator-design.dll
@@ -322,7 +333,6 @@ C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\System
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\System.Composition.Hosting.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\System.Composition.Runtime.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\System.Composition.TypedParts.dll
-C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\System.Configuration.ConfigurationManager.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\System.IdentityModel.Tokens.Jwt.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\System.Memory.Data.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\System.Reflection.MetadataLoadContext.dll
@@ -481,10 +491,8 @@ C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\tr\Mic
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\runtimes\unix\lib\net6.0\Microsoft.Data.SqlClient.dll
-C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\runtimes\win\lib\net6.0\Microsoft.Data.SqlClient.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\runtimes\win-arm\native\Microsoft.Data.SqlClient.SNI.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\runtimes\win-arm64\native\Microsoft.Data.SqlClient.SNI.dll
-C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\runtimes\win-x64\native\Microsoft.Data.SqlClient.SNI.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\runtimes\win-x86\native\Microsoft.Data.SqlClient.SNI.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Runtime.Caching.dll
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\BoardPaySystem.csproj.AssemblyReference.cache
@@ -563,6 +571,7 @@ C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compre
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\v0zgfp0y55-87fc7y1x7t.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\yfc7ypekbg-mlv21k5csn.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\eyta2z3lqi-soeidkn2u2.gz
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\h7rear5xxc-gubxhf7yrw.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\ebmrh4qx13-61n19gt1b8.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\dm792kjgc6-9okdee9b04.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\h3ec5ojsta-bqjiyaj88i.gz
@@ -610,10 +619,12 @@ C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compre
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\w4zueod4pd-63fj8s7r0e.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\sv1b556y60-0j3bgjxly4.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\yng3uzq0wb-47otxtyo56.gz
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\jhq942wlgk-48y08845bh.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\w5dabfps8v-356vix0kms.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\s8v6jefcyp-83jwlth58m.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\0pej5xn09h-mrlpezrjn3.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\q0l6kgjvd7-lzl9nlhx6b.gz
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\06m2217fya-b7iojwaux1.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\7e59dt0w7c-x0q3zqp4vz.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\7rok5haxte-0i3buxo5is.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\4n3q85eall-o1o13a6vjx.gz
@@ -621,6 +632,7 @@ C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compre
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\jsacvrwf5y-2z0ns9nrw6.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\uej3en8cdt-muycvpuwrr.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\x8rycpgoac-87fc7y1x7t.gz
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\qdonwrun7r-dd6z7egasc.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\8uf9eouyvl-mlv21k5csn.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\tj6ja6otpd-zm69n7w3c6.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\lr87g1804w-zm69n7w3c6.gz
@@ -639,8 +651,5 @@ C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\refint
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\BoardPaySystem.pdb
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\BoardPaySystem.genruntimeconfig.cache
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\ref\BoardPaySystem.dll
-C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\jhq942wlgk-48y08845bh.gz
-C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\06m2217fya-b7iojwaux1.gz
-C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\qdonwrun7r-dd6z7egasc.gz
-C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\h7rear5xxc-gubxhf7yrw.gz
 C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\staticwebassets.upToDateCheck.txt
+C:\Users\User\source\repos\BoardPaySystem\BoardPaySystem\obj\Debug\net9.0\compressed\ri94p9u0bu-x4lgyhmj7w.gz
