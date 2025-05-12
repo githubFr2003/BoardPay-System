@@ -10,7 +10,7 @@
     
     // Group unpaid bills by tenant for the summary section
     var unpaidBillsByTenant = bills
-        .Where(b => b.Status != BoardPaySystem.Models.BillStatus.Paid && b.Status != BoardPaySystem.Models.BillStatus.Cancelled)
+        .Where(b => b.Status != BoardPaySystem.Models.BillStatus.Paid && b.Status != BoardPaySystem.Models.BillStatus.Cancelled && b.Status != BoardPaySystem.Models.BillStatus.WrittenOff)
         .GroupBy(b => new { b.TenantId, TenantName = $"{b.Tenant?.FirstName} {b.Tenant?.LastName}", RoomNumber = b.Room?.RoomNumber })
         .ToDictionary(g => g.Key, g => g.ToList());
         
@@ -66,46 +66,59 @@
         </div>
     }
 
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row mb-3 align-items-end">
-                <div class="col-md-4">
-                    <label for="filter-status" class="form-label">Filter by Status:</label>
-                    <select id="filter-status" class="form-select">
-                        <option value="all" selected>All Statuses</option>
-                        <option value="pending">Pending</option>
-                        <option value="overdue">Overdue</option>
-                        <option value="paid">Paid</option>
-                        <option value="cancelled">Cancelled</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label for="filter-month" class="form-label">Filter by Month:</label>
-                    <select id="filter-month" class="form-select">
-                        <option value="all">All Months</option>
-                        <option value="@($"{currentYear}-{currentMonth:D2}")" selected>Current Month</option>
-                        @for (int i = 1; i <= 12; i++)
+    <form method="get" id="billing-filter-form">
+        <div class="row mb-3 align-items-end">
+            <div class="col-md-4">
+                <label for="filter-status" class="form-label">Filter by Status:</label>
+                <select id="filter-status" name="status" class="form-select" onchange="document.getElementById('billing-filter-form').submit()">
+                    @if (ViewBag.CurrentStatus == "all") { <option value="all" selected>All Statuses</option> } else { <option value="all">All Statuses</option> }
+                    @if (ViewBag.CurrentStatus == "notpaid") { <option value="notpaid" selected>Not Paid</option> } else { <option value="notpaid">Not Paid</option> }
+                    @if (ViewBag.CurrentStatus == "overdue") { <option value="overdue" selected>Overdue</option> } else { <option value="overdue">Overdue</option> }
+                    @if (ViewBag.CurrentStatus == "paid") { <option value="paid" selected>Paid</option> } else { <option value="paid">Paid</option> }
+                    @if (ViewBag.CurrentStatus == "writtenoff") { <option value="writtenoff" selected>Written Off</option> } else { <option value="writtenoff">Written Off</option> }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="filter-month" class="form-label">Filter by Month:</label>
+                <select id="filter-month" name="month" class="form-select" onchange="document.getElementById('billing-filter-form').submit()">
+                    @if (ViewBag.CurrentMonth == "all") { <option value="all" selected>All Months</option> } else { <option value="all">All Months</option> }
+                    @if (ViewBag.CurrentMonth == "current") { <option value="current" selected>Current Month</option> } else { <option value="current">Current Month</option> }
+                    @for (int i = 1; i <= 12; i++)
+                    {
+                        var monthValue = $"{DateTime.Now.Year}-{i:D2}";
+                        if (ViewBag.CurrentMonth == monthValue)
                         {
-                            <option value="@($"{currentYear}-{i:D2}")">@(new DateTime(currentYear, i, 1).ToString("MMMM yyyy"))</option>
+                            <option value="@monthValue" selected>@(new DateTime(DateTime.Now.Year, i, 1).ToString("MMMM yyyy"))</option>
                         }
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label for="filter-building" class="form-label">Filter by Building:</label>
-                    <select id="filter-building" class="form-select">
-                        <option value="all" selected>All Buildings</option>
-                        @if (ViewBag.Buildings != null)
+                        else
                         {
-                            foreach (var building in ViewBag.Buildings)
+                            <option value="@monthValue">@(new DateTime(DateTime.Now.Year, i, 1).ToString("MMMM yyyy"))</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="filter-building" class="form-label">Filter by Building:</label>
+                <select id="filter-building" name="building" class="form-select" onchange="document.getElementById('billing-filter-form').submit()">
+                    @if (ViewBag.CurrentBuilding == "all") { <option value="all" selected>All Buildings</option> } else { <option value="all">All Buildings</option> }
+                    @if (ViewBag.Buildings != null)
+                    {
+                        foreach (var building in ViewBag.Buildings)
+                        {
+                            if (ViewBag.CurrentBuilding == building.BuildingId.ToString())
+                            {
+                                <option value="@building.BuildingId" selected>@building.BuildingName</option>
+                            }
+                            else
                             {
                                 <option value="@building.BuildingId">@building.BuildingName</option>
                             }
                         }
-                    </select>
-                </div>
+                    }
+                </select>
             </div>
         </div>
-    </div>
+    </form>
 
     @if ((billsByTenant == null || !billsByTenant.Any()) && (tenantsWithMultipleUnpaidBills == null || tenantsWithMultipleUnpaidBills.Count == 0) && (tenantsWithOnlyCurrentUnpaidBill == null || tenantsWithOnlyCurrentUnpaidBill.Count == 0))
     {
@@ -164,7 +177,7 @@
         <div class="row mt-4">
             <div class="col-md-12">
                 <h5 class="fw-bold mb-2 text-primary" style="font-size:1.1rem;">Tenant Bills</h5>
-                <div class="table-responsive">
+                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                     <table class="table table-sm table-striped table-hover align-middle">
                         <thead class="table-light small">
                             <tr>
@@ -179,60 +192,124 @@
                         <tbody class="small">
                         @if (billsByTenant != null && billsByTenant.Any())
                         {
-                            foreach (var bill in billsByTenant.Values.SelectMany(b => b).OrderBy(b => b.DueDate))
+                            var allBills = billsByTenant.Values.SelectMany(b => b);
+                            if (ViewBag.CurrentStatus == "all")
                             {
-                                // Skip bills for tenants already shown in the first table
-                                if (tenantsWithMultipleUnpaidBills != null && tenantsWithMultipleUnpaidBills.Any(t => t.Id == bill.TenantId))
+                                // Not Paid (NotPaid), then Paid, then Written Off
+                                var notPaid = allBills.Where(b => b.Status == BoardPaySystem.Models.BillStatus.NotPaid).OrderBy(b => b.DueDate);
+                                var paid = allBills.Where(b => b.Status == BoardPaySystem.Models.BillStatus.Paid).OrderBy(b => b.DueDate);
+                                var writtenOff = allBills.Where(b => b.Status == BoardPaySystem.Models.BillStatus.WrittenOff).OrderBy(b => b.DueDate);
+                                foreach (var bill in notPaid.Concat(paid).Concat(writtenOff))
                                 {
-                                    continue;
-                                }
-                                <tr>
-                                    <td>
-                                        <div class="fw-bold">@bill.Tenant?.FirstName @bill.Tenant?.LastName</div>
-                                        <div class="text-muted small">
-                                            <i class="fas fa-phone-alt"></i> @bill.Tenant?.PhoneNumber
-                                        </div>
-                                        <div class="text-muted small">
-                                            <i class="fas fa-building"></i> @bill.Room?.Floor?.Building?.BuildingName
-                                        </div>
-                                    </td>
-                                    <td>@bill.Room?.RoomNumber</td>
-                                    <td>@bill.DueDate.ToString("MM/dd/yyyy")</td>
-                                    <td class="fw-bold">@bill.TotalAmount.ToString("C")</td>
-                                    <td>
-                                        @if (bill.Status == BoardPaySystem.Models.BillStatus.NotPaid)
-                                        {
-                                            <span class="badge bg-secondary">NotPaid</span>
-                                        }
-                                        else if (bill.Status == BoardPaySystem.Models.BillStatus.Paid)
-                                        {
-                                            <span class="badge bg-success">Paid</span>
-                                        }
-                                        else if (bill.Status == BoardPaySystem.Models.BillStatus.Overdue)
-                                        {
-                                            <span class="badge bg-danger">Overdue</span>
-                                        }
-                                        else if (bill.Status == BoardPaySystem.Models.BillStatus.Pending)
-                                        {
-                                            <span class="badge bg-warning text-dark">Pending</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-light text-dark">@bill.Status</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        <a href="@Url.Action("BillDetails", "Billing", new { id = bill.BillId })" class="btn btn-primary btn-sm me-1">
-                                            <i class="fas fa-eye"></i> DETAILS
-                                        </a>
-                                        @if (bill.Status == BoardPaySystem.Models.BillStatus.NotPaid || bill.Status == BoardPaySystem.Models.BillStatus.Overdue)
-                                        {
-                                            <a href="@Url.Action("Payment", "Tenant", new { id = bill.BillId })" class="btn btn-success btn-sm">
-                                                <i class="fas fa-money-bill-wave"></i> Payment
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold">@bill.Tenant?.FirstName @bill.Tenant?.LastName</div>
+                                            <div class="text-muted small">
+                                                <i class="fas fa-phone-alt"></i> @bill.Tenant?.PhoneNumber
+                                            </div>
+                                            <div class="text-muted small">
+                                                <i class="fas fa-building"></i> @bill.Room?.Floor?.Building?.BuildingName
+                                            </div>
+                                        </td>
+                                        <td>@bill.Room?.RoomNumber</td>
+                                        <td>@bill.DueDate.ToString("MM/dd/yyyy")</td>
+                                        <td class="fw-bold">@bill.TotalAmount.ToString("C")</td>
+                                        <td>
+                                            @if (bill.Status == BoardPaySystem.Models.BillStatus.NotPaid)
+                                            {
+                                                <span class="badge bg-secondary">NotPaid</span>
+                                            }
+                                            else if (bill.Status == BoardPaySystem.Models.BillStatus.Paid)
+                                            {
+                                                <span class="badge bg-success">Paid</span>
+                                            }
+                                            else if (bill.Status == BoardPaySystem.Models.BillStatus.Overdue)
+                                            {
+                                                <span class="badge bg-danger">Overdue</span>
+                                            }
+                                            else if (bill.Status == BoardPaySystem.Models.BillStatus.Pending)
+                                            {
+                                                <span class="badge bg-warning text-dark">Pending</span>
+                                            }
+                                            else if (bill.Status == BoardPaySystem.Models.BillStatus.WrittenOff)
+                                            {
+                                                <span class="badge bg-dark">Written Off</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-light text-dark">@bill.Status</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <a href="@Url.Action("BillDetails", "Billing", new { id = bill.BillId })" class="btn btn-primary btn-sm me-1">
+                                                <i class="fas fa-eye"></i> DETAILS
                                             </a>
-                                        }
-                                    </td>
-                                </tr>
+                                            @if (bill.Status == BoardPaySystem.Models.BillStatus.NotPaid || bill.Status == BoardPaySystem.Models.BillStatus.Overdue)
+                                            {
+                                                <a href="@Url.Action("Payment", "Tenant", new { id = bill.BillId })" class="btn btn-success btn-sm">
+                                                    <i class="fas fa-money-bill-wave"></i> Payment
+                                                </a>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                foreach (var bill in allBills.OrderBy(b => b.DueDate))
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold">@bill.Tenant?.FirstName @bill.Tenant?.LastName</div>
+                                            <div class="text-muted small">
+                                                <i class="fas fa-phone-alt"></i> @bill.Tenant?.PhoneNumber
+                                            </div>
+                                            <div class="text-muted small">
+                                                <i class="fas fa-building"></i> @bill.Room?.Floor?.Building?.BuildingName
+                                            </div>
+                                        </td>
+                                        <td>@bill.Room?.RoomNumber</td>
+                                        <td>@bill.DueDate.ToString("MM/dd/yyyy")</td>
+                                        <td class="fw-bold">@bill.TotalAmount.ToString("C")</td>
+                                        <td>
+                                            @if (bill.Status == BoardPaySystem.Models.BillStatus.NotPaid)
+                                            {
+                                                <span class="badge bg-secondary">NotPaid</span>
+                                            }
+                                            else if (bill.Status == BoardPaySystem.Models.BillStatus.Paid)
+                                            {
+                                                <span class="badge bg-success">Paid</span>
+                                            }
+                                            else if (bill.Status == BoardPaySystem.Models.BillStatus.Overdue)
+                                            {
+                                                <span class="badge bg-danger">Overdue</span>
+                                            }
+                                            else if (bill.Status == BoardPaySystem.Models.BillStatus.Pending)
+                                            {
+                                                <span class="badge bg-warning text-dark">Pending</span>
+                                            }
+                                            else if (bill.Status == BoardPaySystem.Models.BillStatus.WrittenOff)
+                                            {
+                                                <span class="badge bg-dark">Written Off</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-light text-dark">@bill.Status</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <a href="@Url.Action("BillDetails", "Billing", new { id = bill.BillId })" class="btn btn-primary btn-sm me-1">
+                                                <i class="fas fa-eye"></i> DETAILS
+                                            </a>
+                                            @if (bill.Status == BoardPaySystem.Models.BillStatus.NotPaid || bill.Status == BoardPaySystem.Models.BillStatus.Overdue)
+                                            {
+                                                <a href="@Url.Action("Payment", "Tenant", new { id = bill.BillId })" class="btn btn-success btn-sm">
+                                                    <i class="fas fa-money-bill-wave"></i> Payment
+                                                </a>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
                             }
                         }
                         else

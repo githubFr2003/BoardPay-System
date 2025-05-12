@@ -29,6 +29,7 @@
                 var isPaid = bill.Status == BoardPaySystem.Models.BillStatus.Paid;
                 var isPending = bill.Status == BoardPaySystem.Models.BillStatus.Pending;
                 var isOverdue = bill.Status == BoardPaySystem.Models.BillStatus.Overdue;
+                var isWrittenOff = bill.Status == BoardPaySystem.Models.BillStatus.WrittenOff;
                 <tr>
                     <td>@bill.BillingDate.ToString("MMM yyyy")</td>
                     <td>₱@bill.MonthlyRent.ToString("N0")</td>
@@ -56,12 +57,17 @@
                         {
                             <span class="status status-overdue">Overdue</span>
                         }
+                        else if (isWrittenOff)
+                        {
+                            <span class="status status-writtenoff">Written Off</span>
+                        }
                         else
                         {
                             <span class="status status-pending">Not Paid</span>
                         }
                     </td>
-                    <td>
+                    <td class="action-cell">
+                        <div class="action-btn">
                         @if (!isPaid)
                         {
                             <a asp-action="Payment" asp-controller="Tenant" asp-route-id="@bill.BillId" class="btn-primary btn-small">Pay Now</a>
@@ -70,6 +76,7 @@
                         {
                             <a asp-action="BillDetails" asp-controller="Tenant" asp-route-id="@bill.BillId" class="btn-secondary btn-small">View Details</a>
                         }
+                        </div>
                     </td>
                 </tr>
             }

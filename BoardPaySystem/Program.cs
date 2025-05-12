@@ -39,6 +39,9 @@ builder.Services.AddScoped<IRoleInitializer, RoleInitializer>();
 // Add billing service
 builder.Services.AddScoped<IBillingService, BillingService>();
 
+// Add notification service
+builder.Services.AddScoped<INotificationService, NotificationService>();
+
 // Add meter reading service with resilience to missing tables
 builder.Services.AddScoped<IMeterReadingService, ResilienceMeterReadingService>();
 
@@ -50,6 +53,7 @@ var disableBackgroundServices = builder.Configuration.GetValue<bool>("DisableBac
 if (!disableBackgroundServices)
 {
     builder.Services.AddHostedService<BillingBackgroundService>();
+    builder.Services.AddHostedService<NotificationBackgroundService>();
 }
 
 // Add landlord service

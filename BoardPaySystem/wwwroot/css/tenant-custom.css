@@ -60,4 +60,151 @@ button:active, .btn-primary:active, .btn-secondary:active, .btn-danger:active, .
 /* --- Info/Message --- */
 .message { padding: 10px 15px; margin-top: 15px; border-radius: 4px; display: none; }
 .message.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-.message.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; } 
+.message.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+.tenant-main-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(44, 62, 80, 0.08), 0 1.5px 4px rgba(44, 62, 80, 0.04);
+    padding: 32px 36px;
+    margin: 18px auto;
+    max-width: 1100px;
+    min-height: calc(100vh - 36px);
+    height: auto;
+    transition: box-shadow 0.2s, border-radius 0.2s;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.main-content {
+    padding: 0 !important;
+    min-height: 100vh;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+/* --- Tenant Bills Action Button Alignment --- */
+.action-cell {
+    vertical-align: middle !important;
+    text-align: center !important;
+}
+.action-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+.action-btn .btn-primary, .action-btn .btn-secondary {
+    min-width: 90px;
+}
+
+/* --- GCash Reference Input Styling --- */
+.gcash-input-group {
+    margin-bottom: 18px;
+}
+.gcash-label {
+    font-weight: 600;
+    font-size: 1.08em;
+    margin-bottom: 6px;
+}
+.gcash-input {
+    font-size: 1.1em;
+    padding: 14px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    border: 1px solid #bfc9d1;
+    box-shadow: 0 1px 2px rgba(44,62,80,0.04);
+    transition: border-color 0.2s;
+}
+.gcash-input:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+/* --- Responsive Improvements for Tenant Layout --- */
+.mobile-menu-toggle {
+    display: none;
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    background: #3498db;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 1.3em;
+    z-index: 1101;
+    box-shadow: 0 2px 8px rgba(44,62,80,0.08);
+    cursor: pointer;
+}
+.mobile-menu-toggle i { pointer-events: none; }
+.mobile-menu-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(44,62,80,0.18);
+    z-index: 1100;
+}
+.mobile-menu-overlay.active { display: block; }
+
+@media (max-width: 900px) {
+    .app-container {
+        border-radius: 0;
+        box-shadow: none;
+        max-width: 100vw;
+    }
+    .dashboard {
+        flex-direction: column;
+        min-height: 100vh;
+    }
+    .sidebar {
+        position: fixed;
+        left: -260px;
+        top: 0;
+        height: 100vh;
+        z-index: 1200;
+        transition: left 0.3s;
+        box-shadow: 2px 0 12px rgba(44,62,80,0.08);
+    }
+    .sidebar.active {
+        left: 0;
+    }
+    .main-content {
+        padding: 0 !important;
+        min-height: 100vh;
+        height: 100vh;
+    }
+    .tenant-main-card {
+        padding: 12px 6px;
+        border-radius: 10px;
+        min-width: 0;
+        margin: 12px 4px;
+        min-height: calc(100vh - 24px);
+        height: auto;
+    }
+    .mobile-menu-toggle {
+        display: block;
+    }
+}
+
+@media (max-width: 600px) {
+    .tenant-main-card {
+        padding: 8px 2px;
+        border-radius: 6px;
+        margin: 6px 2px;
+        min-height: calc(100vh - 12px);
+        height: auto;
+    }
+    .content-section h3 {
+        font-size: 1.1em;
+        padding-bottom: 0.5rem;
+        margin-bottom: 0.7rem;
+    }
+    th, td {
+        padding: 7px 6px;
+        font-size: 0.98em;
+    }
+} 

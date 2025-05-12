@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "Rt2Uz7AjTodrFrqkCDAZlTFxuc7URLzxQGJN7c4GBcc=",
+  "Hash": "YgZL8uAgy8pyKMJLm6cK2BxKaXavUu9m+csAJkINPFE=",
   "Source": "BoardPaySystem",
   "BasePath": "_content/BoardPaySystem",
   "Mode": "Default",
@@ -3209,12 +3209,12 @@
       "OriginalItemSpec": "C:\\Users\\User\\.nuget\\packages\\microsoft.aspnetcore.identity.ui\\9.0.4\\staticwebassets\\V5\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css.map"
     },
     {
-      "Identity": "C:\\Users\\User\\source\\repos\\BoardPaySystem\\BoardPaySystem\\obj\\Debug\\net9.0\\compressed\\ri94p9u0bu-x4lgyhmj7w.gz",
+      "Identity": "C:\\Users\\User\\source\\repos\\BoardPaySystem\\BoardPaySystem\\obj\\Debug\\net9.0\\compressed\\ri94p9u0bu-vqtk29pz1x.gz",
       "SourceId": "BoardPaySystem",
       "SourceType": "Discovered",
       "ContentRoot": "C:\\Users\\User\\source\\repos\\BoardPaySystem\\BoardPaySystem\\obj\\Debug\\net9.0\\compressed\\",
       "BasePath": "_content/BoardPaySystem",
-      "RelativePath": "css/tenant-custom#[.{fingerprint=x4lgyhmj7w}]?.css.gz",
+      "RelativePath": "css/tenant-custom#[.{fingerprint=vqtk29pz1x}]?.css.gz",
       "AssetKind": "All",
       "AssetMode": "All",
       "AssetRole": "Alternative",
@@ -3223,8 +3223,8 @@
       "RelatedAsset": "C:\\Users\\User\\source\\repos\\BoardPaySystem\\BoardPaySystem\\wwwroot\\css\\tenant-custom.css",
       "AssetTraitName": "Content-Encoding",
       "AssetTraitValue": "gzip",
-      "Fingerprint": "sjcwyiw468",
-      "Integrity": "eA4xzWCFhlmQJPAkDTqJZsw4MMOH5y10daElTYBhFeY=",
+      "Fingerprint": "jl64z3slm5",
+      "Integrity": "Z+nuaRM1QcNknJyQQlzeNhphE+0rDmY0Q4A+FsVjW0o=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "C:\\Users\\User\\source\\repos\\BoardPaySystem\\BoardPaySystem\\wwwroot\\css\\tenant-custom.css"
@@ -4147,8 +4147,8 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "x4lgyhmj7w",
-      "Integrity": "ATWpqJYASTsgq2j8hLPJNPeCdOumX2mV1VruquODRe4=",
+      "Fingerprint": "vqtk29pz1x",
+      "Integrity": "lymCkSDgNHoTB7PxsB7RP3NE9keOFEEwysAqLTvC+Dw=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\css\\tenant-custom.css"
@@ -6709,12 +6709,12 @@
     },
     {
       "Route": "css/tenant-custom.css",
-      "AssetFile": "C:\\Users\\User\\source\\repos\\BoardPaySystem\\BoardPaySystem\\obj\\Debug\\net9.0\\compressed\\ri94p9u0bu-x4lgyhmj7w.gz",
+      "AssetFile": "C:\\Users\\User\\source\\repos\\BoardPaySystem\\BoardPaySystem\\obj\\Debug\\net9.0\\compressed\\ri94p9u0bu-vqtk29pz1x.gz",
       "Selectors": [
         {
           "Name": "Content-Encoding",
           "Value": "gzip",
-          "Quality": "0.000674308833"
+          "Quality": "0.000439174352"
         }
       ],
       "ResponseHeaders": [
@@ -6724,15 +6724,15 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "1482"
+          "Value": "2276"
         },
         {
           "Name": "ETag",
-          "Value": "\"eA4xzWCFhlmQJPAkDTqJZsw4MMOH5y10daElTYBhFeY=\""
+          "Value": "\"Z+nuaRM1QcNknJyQQlzeNhphE+0rDmY0Q4A+FsVjW0o=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Sun, 11 May 2025 13:34:48 GMT"
+          "Value": "Mon, 12 May 2025 10:06:07 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -6752,13 +6752,13 @@
         },
         {
           "Name": "ETag",
-          "Value": "W/\"ATWpqJYASTsgq2j8hLPJNPeCdOumX2mV1VruquODRe4=\""
+          "Value": "W/\"lymCkSDgNHoTB7PxsB7RP3NE9keOFEEwysAqLTvC+Dw=\""
         }
       ],
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-ATWpqJYASTsgq2j8hLPJNPeCdOumX2mV1VruquODRe4="
+          "Value": "sha256-lymCkSDgNHoTB7PxsB7RP3NE9keOFEEwysAqLTvC+Dw="
         }
       ]
     },
@@ -6773,7 +6773,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "4496"
+          "Value": "7881"
         },
         {
           "Name": "Content-Type",
@@ -6781,11 +6781,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"ATWpqJYASTsgq2j8hLPJNPeCdOumX2mV1VruquODRe4=\""
+          "Value": "\"lymCkSDgNHoTB7PxsB7RP3NE9keOFEEwysAqLTvC+Dw=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Sun, 11 May 2025 13:34:48 GMT"
+          "Value": "Mon, 12 May 2025 10:06:07 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -6795,13 +6795,13 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-ATWpqJYASTsgq2j8hLPJNPeCdOumX2mV1VruquODRe4="
+          "Value": "sha256-lymCkSDgNHoTB7PxsB7RP3NE9keOFEEwysAqLTvC+Dw="
         }
       ]
     },
     {
       "Route": "css/tenant-custom.css.gz",
-      "AssetFile": "C:\\Users\\User\\source\\repos\\BoardPaySystem\\BoardPaySystem\\obj\\Debug\\net9.0\\compressed\\ri94p9u0bu-x4lgyhmj7w.gz",
+      "AssetFile": "C:\\Users\\User\\source\\repos\\BoardPaySystem\\BoardPaySystem\\obj\\Debug\\net9.0\\compressed\\ri94p9u0bu-vqtk29pz1x.gz",
       "Selectors": [],
       "ResponseHeaders": [
         {
@@ -6810,7 +6810,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "1482"
+          "Value": "2276"
         },
         {
           "Name": "Content-Type",
@@ -6818,11 +6818,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"eA4xzWCFhlmQJPAkDTqJZsw4MMOH5y10daElTYBhFeY=\""
+          "Value": "\"Z+nuaRM1QcNknJyQQlzeNhphE+0rDmY0Q4A+FsVjW0o=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Sun, 11 May 2025 13:34:48 GMT"
+          "Value": "Mon, 12 May 2025 10:06:07 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -6840,18 +6840,18 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-eA4xzWCFhlmQJPAkDTqJZsw4MMOH5y10daElTYBhFeY="
+          "Value": "sha256-Z+nuaRM1QcNknJyQQlzeNhphE+0rDmY0Q4A+FsVjW0o="
         }
       ]
     },
     {
-      "Route": "css/tenant-custom.x4lgyhmj7w.css",
-      "AssetFile": "C:\\Users\\User\\source\\repos\\BoardPaySystem\\BoardPaySystem\\obj\\Debug\\net9.0\\compressed\\ri94p9u0bu-x4lgyhmj7w.gz",
+      "Route": "css/tenant-custom.vqtk29pz1x.css",
+      "AssetFile": "C:\\Users\\User\\source\\repos\\BoardPaySystem\\BoardPaySystem\\obj\\Debug\\net9.0\\compressed\\ri94p9u0bu-vqtk29pz1x.gz",
       "Selectors": [
         {
           "Name": "Content-Encoding",
           "Value": "gzip",
-          "Quality": "0.000674308833"
+          "Quality": "0.000439174352"
         }
       ],
       "ResponseHeaders": [
@@ -6861,15 +6861,15 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "1482"
+          "Value": "2276"
         },
         {
           "Name": "ETag",
-          "Value": "\"eA4xzWCFhlmQJPAkDTqJZsw4MMOH5y10daElTYBhFeY=\""
+          "Value": "\"Z+nuaRM1QcNknJyQQlzeNhphE+0rDmY0Q4A+FsVjW0o=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Sun, 11 May 2025 13:34:48 GMT"
+          "Value": "Mon, 12 May 2025 10:06:07 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -6889,13 +6889,13 @@
         },
         {
           "Name": "ETag",
-          "Value": "W/\"ATWpqJYASTsgq2j8hLPJNPeCdOumX2mV1VruquODRe4=\""
+          "Value": "W/\"lymCkSDgNHoTB7PxsB7RP3NE9keOFEEwysAqLTvC+Dw=\""
         }
       ],
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "x4lgyhmj7w"
+          "Value": "vqtk29pz1x"
         },
         {
           "Name": "label",
@@ -6903,12 +6903,12 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-ATWpqJYASTsgq2j8hLPJNPeCdOumX2mV1VruquODRe4="
+          "Value": "sha256-lymCkSDgNHoTB7PxsB7RP3NE9keOFEEwysAqLTvC+Dw="
         }
       ]
     },
     {
-      "Route": "css/tenant-custom.x4lgyhmj7w.css",
+      "Route": "css/tenant-custom.vqtk29pz1x.css",
       "AssetFile": "C:\\Users\\User\\source\\repos\\BoardPaySystem\\BoardPaySystem\\wwwroot\\css\\tenant-custom.css",
       "Selectors": [],
       "ResponseHeaders": [
@@ -6918,7 +6918,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "4496"
+          "Value": "7881"
         },
         {
           "Name": "Content-Type",
@@ -6926,11 +6926,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"ATWpqJYASTsgq2j8hLPJNPeCdOumX2mV1VruquODRe4=\""
+          "Value": "\"lymCkSDgNHoTB7PxsB7RP3NE9keOFEEwysAqLTvC+Dw=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Sun, 11 May 2025 13:34:48 GMT"
+          "Value": "Mon, 12 May 2025 10:06:07 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -6940,7 +6940,7 @@
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "x4lgyhmj7w"
+          "Value": "vqtk29pz1x"
         },
         {
           "Name": "label",
@@ -6948,13 +6948,13 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-ATWpqJYASTsgq2j8hLPJNPeCdOumX2mV1VruquODRe4="
+          "Value": "sha256-lymCkSDgNHoTB7PxsB7RP3NE9keOFEEwysAqLTvC+Dw="
         }
       ]
     },
     {
-      "Route": "css/tenant-custom.x4lgyhmj7w.css.gz",
-      "AssetFile": "C:\\Users\\User\\source\\repos\\BoardPaySystem\\BoardPaySystem\\obj\\Debug\\net9.0\\compressed\\ri94p9u0bu-x4lgyhmj7w.gz",
+      "Route": "css/tenant-custom.vqtk29pz1x.css.gz",
+      "AssetFile": "C:\\Users\\User\\source\\repos\\BoardPaySystem\\BoardPaySystem\\obj\\Debug\\net9.0\\compressed\\ri94p9u0bu-vqtk29pz1x.gz",
       "Selectors": [],
       "ResponseHeaders": [
         {
@@ -6963,7 +6963,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "1482"
+          "Value": "2276"
         },
         {
           "Name": "Content-Type",
@@ -6971,11 +6971,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"eA4xzWCFhlmQJPAkDTqJZsw4MMOH5y10daElTYBhFeY=\""
+          "Value": "\"Z+nuaRM1QcNknJyQQlzeNhphE+0rDmY0Q4A+FsVjW0o=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Sun, 11 May 2025 13:34:48 GMT"
+          "Value": "Mon, 12 May 2025 10:06:07 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -6993,7 +6993,7 @@
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "x4lgyhmj7w"
+          "Value": "vqtk29pz1x"
         },
         {
           "Name": "label",
@@ -7001,7 +7001,7 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-eA4xzWCFhlmQJPAkDTqJZsw4MMOH5y10daElTYBhFeY="
+          "Value": "sha256-Z+nuaRM1QcNknJyQQlzeNhphE+0rDmY0Q4A+FsVjW0o="
         }
       ]
     },

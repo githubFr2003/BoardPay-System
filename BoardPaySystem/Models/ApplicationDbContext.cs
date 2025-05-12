@@ -17,6 +17,7 @@ namespace BoardPaySystem.Models
         public DbSet<Contract> Contracts { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<MeterReading> MeterReadings { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -114,6 +115,20 @@ namespace BoardPaySystem.Models
             builder.Entity<ApplicationUser>()
                 .HasIndex(u => u.UserName)
                 .IsUnique();
+
+            // Configure Notifications relationships
+            builder.Entity<Notification>()
+                .HasOne(n => n.User)
+                .WithMany()
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Notification>()
+                .HasOne(n => n.Bill)
+                .WithMany()
+                .HasForeignKey(n => n.BillId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
         }
     }
 } 

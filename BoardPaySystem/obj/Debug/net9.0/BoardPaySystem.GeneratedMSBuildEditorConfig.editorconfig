@@ -76,6 +76,14 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTGFuZGxvcmRcQWRkVGVuYW50LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Landlord/ArchivedTenants.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTGFuZGxvcmRcQXJjaGl2ZWRUZW5hbnRzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Landlord/BillHistory.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTGFuZGxvcmRcQmlsbEhpc3RvcnkuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Landlord/Billing.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTGFuZGxvcmRcQmlsbGluZy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
@@ -116,12 +124,16 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTGFuZGxvcmRcTWV0ZXJSZWFkaW5ncy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Landlord/MonthlyIncomeSummary.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTGFuZGxvcmRcTW9udGhseUluY29tZVN1bW1hcnkuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Landlord/Overview.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTGFuZGxvcmRcT3ZlcnZpZXcuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Landlord/Reports.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTGFuZGxvcmRcUmVwb3J0cy5jc2h0bWw=
+[C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Landlord/PaymentHistory.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTGFuZGxvcmRcUGF5bWVudEhpc3RvcnkuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/User/source/repos/BoardPaySystem/BoardPaySystem/Views/Landlord/TenantDetails.cshtml]

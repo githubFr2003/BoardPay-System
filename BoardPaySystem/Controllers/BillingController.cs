@@ -13,12 +13,14 @@ namespace BoardPaySystem.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IBillingService _billingService;
+        private readonly INotificationService _notificationService;
         private readonly ILogger<BillingController> _logger;
 
-        public BillingController(ApplicationDbContext context, IBillingService billingService, ILogger<BillingController> logger)
+        public BillingController(ApplicationDbContext context, IBillingService billingService, INotificationService notificationService, ILogger<BillingController> logger)
         {
             _context = context;
             _billingService = billingService;
+            _notificationService = notificationService;
             _logger = logger;
         }
 
@@ -245,10 +247,12 @@ namespace BoardPaySystem.Controllers
                 if (totalPaid >= bill.TotalAmount)
                 {
                     bill.Status = BillStatus.Paid;
+                    // Create payment confirmation notification
+                    await _notificationService.CreateBillNotificationAsync(bill, NotificationType.PaymentConfirmed);
                 }
                 else if (totalPaid > 0)
                 {
-                    bill.Status = BillStatus.Pending; // Changed from PartiallyPaid to Pending
+                    bill.Status = BillStatus.Pending;
                 }
                 
                 _context.Update(bill);
@@ -342,7 +346,7 @@ namespace BoardPaySystem.Controllers
             bill.PaymentDate = DateTime.Now;
             bill.AmountPaid = amount;
             
-            // Record the payment - fixed property name to match Payment model
+            // Record the payment
             var payment = new Payment
             {
                 BillId = billId,
@@ -350,12 +354,15 @@ namespace BoardPaySystem.Controllers
                 Amount = amount,
                 PaymentDate = DateTime.Now,
                 PaymentMethod = "GCash",
-                ReferenceNumber = bill.PaymentReference ?? "Approved by landlord", // Correct property name
+                ReferenceNumber = bill.PaymentReference ?? "Approved by landlord",
                 Notes = $"GCash payment approved by landlord on {DateTime.Now}"
             };
             
             _context.Payments.Add(payment);
             await _context.SaveChangesAsync();
+
+            // Create payment confirmation notification
+            await _notificationService.CreateBillNotificationAsync(bill, NotificationType.PaymentConfirmed);
             
             string tenantName = "tenant";
             if (bill.Tenant != null)
@@ -445,14 +452,16 @@ namespace BoardPaySystem.Controllers
             if (bill == null)
                 return NotFound();
 
-            var firstDay = new DateTime(bill.BillingYear, bill.BillingMonth, 1);
-            var lastDay = firstDay.AddMonths(1).AddDays(-1);
+            // Find the base (earliest) reading for this tenant
+            var baseReading = await _context.MeterReadings
+                .Where(m => m.TenantId == bill.TenantId)
+                .OrderBy(m => m.ReadingDate)
+                .FirstOrDefaultAsync();
 
             var readings = await _context.MeterReadings
                 .Where(m => m.TenantId == bill.TenantId
-                    && m.ReadingDate >= firstDay
-                    && m.ReadingDate <= lastDay
-                    && m.BillId == null)
+                    && m.BillId == null
+                    && (baseReading == null || m.ReadingId != baseReading.ReadingId))
                 .OrderBy(m => m.ReadingDate)
                 .Select(m => new {
                     m.ReadingId,
@@ -487,6 +496,26 @@ namespace BoardPaySystem.Controllers
             await _context.SaveChangesAsync();
 
             return Json(new { success = true, message = "Meter reading linked successfully.", charge = reading.TotalCharge });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveBill(int billId)
+        {
+            var bill = await _context.Bills.FindAsync(billId);
+            if (bill == null)
+            {
+                return NotFound();
+            }
+
+            bill.IsApproved = true;
+            await _context.SaveChangesAsync();
+
+            // Create notification for tenant
+            await _notificationService.CreateBillNotificationAsync(bill, NotificationType.NewBill);
+
+            TempData["SuccessMessage"] = "Bill has been approved and is now visible to the tenant.";
+            return RedirectToAction(nameof(BillDetails), new { id = billId });
         }
     }
 }

@@ -8,6 +8,30 @@
 @Html.AntiForgeryToken()
 
 <div class="content-section">
+    <form method="get" id="building-filter-form" class="mb-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label for="buildingId" class="form-label mb-0">Filter by Building:</label>
+                <select id="buildingId" name="buildingId" class="form-select form-select-sm" style="width:auto;display:inline-block;" onchange="document.getElementById('building-filter-form').submit()">
+                    <option value="">All Buildings</option>
+                    @if (ViewBag.AllBuildings != null)
+                    {
+                        foreach (var b in ViewBag.AllBuildings)
+                        {
+                            if (ViewBag.CurrentBuildingId != null && b.BuildingId == (int)ViewBag.CurrentBuildingId)
+                            {
+                                <option value="@b.BuildingId" selected>@b.BuildingName</option>
+                            }
+                            else
+                            {
+                                <option value="@b.BuildingId">@b.BuildingName</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+    </form>
     <div class="page-header">
         <div class="header-content">
             <h3>

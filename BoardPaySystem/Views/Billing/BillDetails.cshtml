@@ -29,6 +29,16 @@
             <a asp-controller="Landlord" asp-action="Billing" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Back to Billing
             </a>
+            @if (!Model.IsApproved)
+            {
+                <form asp-action="ApproveBill" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="billId" value="@Model.BillId" />
+                    <button type="submit" class="btn btn-success ms-2">
+                        <i class="fas fa-check"></i> Approve Bill
+                    </button>
+                </form>
+            }
             <a asp-action="RecordPayment" asp-route-id="@Model.BillId" class="btn btn-primary ms-2">
                 <i class="fas fa-money-bill-wave"></i> Record Payment
             </a>

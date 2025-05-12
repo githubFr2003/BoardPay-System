@@ -99,20 +99,30 @@
                     </div>
                     <div class="mb-3">
                         <label for="edit-password" class="form-label">Password (leave blank to keep current)</label>
-                        <input type="password" id="edit-password" class="form-control" autocomplete="new-password">
+                        <div style="position:relative;">
+                            <input type="password" id="edit-password" class="form-control" autocomplete="new-password">
+                            <span class="toggle-password" onclick="togglePasswordVisibility('edit-password', 'editPasswordEye1')" style="position:absolute;top:50%;right:12px;transform:translateY(-50%);cursor:pointer;">
+                                <i id="editPasswordEye1" class="fa fa-eye"></i>
+                            </span>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label for="edit-confirm-password" class="form-label">Confirm Password</label>
-                        <input type="password" id="edit-confirm-password" class="form-control" autocomplete="new-password">
+                        <div style="position:relative;">
+                            <input type="password" id="edit-confirm-password" class="form-control" autocomplete="new-password">
+                            <span class="toggle-password" onclick="togglePasswordVisibility('edit-confirm-password', 'editPasswordEye2')" style="position:absolute;top:50%;right:12px;transform:translateY(-50%);cursor:pointer;">
+                                <i id="editPasswordEye2" class="fa fa-eye"></i>
+                            </span>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label for="edit-phone" class="form-label">Phone</label>
                         <input type="tel" id="edit-phone" class="form-control" value="@Model.PhoneNumber" required>
                     </div>
-                    <div class="mb-3">
+                    @* <div class="mb-3">
                         <label for="edit-startdate" class="form-label">Start Date</label>
                         <input type="date" id="edit-startdate" class="form-control" value="@Model.StartDate.ToString("yyyy-MM-dd")" required>
-                    </div>
+                    </div> *@
                     <div class="d-flex justify-content-end gap-2">
                         <button type="submit" class="btn btn-primary">Save Changes</button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -358,6 +368,19 @@ if (moveForm) {
             document.getElementById('move-message').classList.add('text-danger');
         });
     });
+}
+function togglePasswordVisibility(inputId, eyeId) {
+    var input = document.getElementById(inputId);
+    var eye = document.getElementById(eyeId);
+    if (input.type === 'password') {
+        input.type = 'text';
+        eye.classList.remove('fa-eye');
+        eye.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        eye.classList.remove('fa-eye-slash');
+        eye.classList.add('fa-eye');
+    }
 }
 </script>
 } 

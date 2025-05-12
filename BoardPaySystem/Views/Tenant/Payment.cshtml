@@ -12,9 +12,9 @@
         <p><strong>GCash Number:</strong> 0917-XXX-XXXX (J. Reyes)</p>
         <form asp-action="SubmitPayment" method="post">
             <input type="hidden" name="billId" value="@Model.BillId" />
-            <div class="form-group mb-3">
-                <label for="paymentReference" class="form-label">GCash Reference Number</label>
-                <input type="text" class="form-control" id="paymentReference" name="paymentReference" required placeholder="Enter the GCash reference number here" />
+            <div class="form-group mb-3 gcash-input-group">
+                <label for="paymentReference" class="form-label gcash-label">GCash Reference Number</label>
+                <input type="text" class="form-control gcash-input" id="paymentReference" name="paymentReference" required placeholder="Enter the GCash reference number here" />
                 <div class="form-text">This is the unique reference number provided by GCash after your payment</div>
             </div>
             <button type="submit" class="btn-success mt-20">Simulate GCash Payment</button>

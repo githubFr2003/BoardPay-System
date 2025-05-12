@@ -47,17 +47,25 @@
 
     <div class="card mb-4">
         <div class="card-body">
-            <div class="mb-3">
-                <label for="filter-tenant-building" class="form-label">Filter by Building:</label>
-                <select id="filter-tenant-building" class="form-select" style="max-width: 300px;">
-                    <option value="all">All Buildings</option>
-                    @foreach (var building in ViewBag.Buildings ?? new List<dynamic>())
-                    {
-                        <option value="@building.BuildingId">@building.BuildingName</option>
-                    }
-                </select>
-            </div>
-
+            <form method="get" id="tenant-building-filter-form">
+                <div class="mb-3">
+                    <label for="filter-tenant-building" class="form-label">Filter by Building:</label>
+                    <select id="filter-tenant-building" name="buildingId" class="form-select" style="max-width: 300px;" onchange="document.getElementById('tenant-building-filter-form').submit()">
+                        <option value="">All Buildings</option>
+                        @foreach (var building in ViewBag.Buildings ?? new List<dynamic>())
+                        {
+                            if (ViewBag.CurrentBuildingId != null && building.BuildingId == (int)ViewBag.CurrentBuildingId)
+                            {
+                                <option value="@building.BuildingId" selected>@building.BuildingName</option>
+                            }
+                            else
+                            {
+                                <option value="@building.BuildingId">@building.BuildingName</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </form>
             @if (!Model.Any())
             {
                 <div class="alert alert-info">
@@ -96,11 +104,11 @@
                                         <a asp-action="TenantDetails" asp-route-id="@tenant.Id" class="btn btn-primary btn-sm">
                                             <i class="fas fa-info-circle"></i> Details
                                         </a>
-                                        <a class="btn btn-info btn-sm" href="/MeterReading/TenantHistory/@tenant.Id" target="_blank">
+                                        <a class="btn btn-info btn-sm" href="/MeterReading/TenantHistory/@tenant.Id">
                                             <i class="fas fa-history"></i> Meter History
                                         </a>
-                                        <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete('@tenant.Id', '@tenant.FirstName @tenant.LastName')">
-                                            <i class="fas fa-trash"></i> Delete
+                                        <button type="button" class="btn btn-warning btn-sm" onclick="confirmArchive('@tenant.Id', '@tenant.FirstName @tenant.LastName')">
+                                            <i class="fas fa-archive"></i> Archive
                                         </button>
                                     </div>
                                 </td>
@@ -139,6 +147,43 @@
                 <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
                     <i class="fas fa-trash me-1"></i>
                     Delete Tenant
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Archive Confirmation Modal -->
+<div class="modal fade" id="archiveConfirmModal" tabindex="-1" aria-labelledby="archiveConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="archiveConfirmModalLabel">
+                    <i class="fas fa-archive me-2"></i>
+                    Confirm Tenant Archive
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="archiveUnpaidWarning" style="display:none;"></div>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Archiving will keep the tenant's data for future reference. You can restore or permanently delete archived tenants later.
+                </div>
+                <p>Are you sure you want to archive the tenant "<span id="archiveTenantName" class="fw-bold"></span>"?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="writeOffBtn" style="display:none;">
+                    <i class="fas fa-eraser me-1"></i>
+                    Write Off & Archive
+                </button>
+                <button type="button" class="btn btn-warning" id="confirmArchiveBtn">
+                    <i class="fas fa-archive me-1"></i>
+                    Archive Tenant
                 </button>
             </div>
         </div>
@@ -288,5 +333,81 @@
                 deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete Tenant';
             });
         });
+
+        function confirmArchive(tenantId, tenantName) {
+            document.getElementById('archiveTenantName').textContent = tenantName;
+            const warningDiv = document.getElementById('archiveUnpaidWarning');
+            const writeOffBtn = document.getElementById('writeOffBtn');
+            const archiveBtn = document.getElementById('confirmArchiveBtn');
+            warningDiv.style.display = 'none';
+            writeOffBtn.style.display = 'none';
+            archiveBtn.disabled = false;
+
+            // Check for unpaid bills
+            fetch(`/Landlord/CheckUnpaidBills?tenantId=${tenantId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.hasUnpaid) {
+                        warningDiv.innerHTML = `<div class='alert alert-danger'><b>Warning:</b> This tenant has ₱${data.total.toLocaleString()} in unpaid bills for: <ul>${data.periods.map(p => `<li>${p}</li>`).join('')}</ul></div>`;
+                        warningDiv.style.display = 'block';
+                        writeOffBtn.style.display = 'inline-block';
+                        archiveBtn.disabled = true;
+                        writeOffBtn.onclick = function() {
+                            writeOffBtn.disabled = true;
+                            writeOffBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Writing Off...';
+                            const token = $('input[name="__RequestVerificationToken"]').val();
+                            const formData = new URLSearchParams();
+                            formData.append('id', tenantId);
+                            formData.append('__RequestVerificationToken', token);
+                            fetch('/Landlord/WriteOffTenantBills', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                body: formData
+                            })
+                            .then(r => r.json())
+                            .then(result => {
+                                if (result.success) {
+                                    writeOffBtn.style.display = 'none';
+                                    archiveBtn.disabled = false;
+                                    warningDiv.innerHTML = `<div class='alert alert-success'>All unpaid bills have been written off. You can now archive the tenant.</div>`;
+                                } else {
+                                    writeOffBtn.disabled = false;
+                                    writeOffBtn.innerHTML = '<i class="fas fa-eraser me-1"></i> Write Off & Archive';
+                                    warningDiv.innerHTML += `<div class='alert alert-danger mt-2'>${result.message}</div>`;
+                                }
+                            });
+                        };
+                    }
+                });
+            document.getElementById('confirmArchiveBtn').onclick = function() {
+                archiveTenant(tenantId);
+            };
+            showModal('archiveConfirmModal');
+        }
+
+        function archiveTenant(tenantId) {
+            const token = $('input[name="__RequestVerificationToken"]').val();
+            const formData = new URLSearchParams();
+            formData.append('id', tenantId);
+            formData.append('__RequestVerificationToken', token);
+
+            fetch('/Landlord/ArchiveTenant', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the tenant row from the table
+                    const row = document.querySelector(`button[onclick*="${tenantId}"`).closest('tr');
+                    if (row) row.remove();
+                    var modal = bootstrap.Modal.getInstance(document.getElementById('archiveConfirmModal'));
+                    if (modal) modal.hide();
+                } else {
+                    alert(data.message || 'Failed to archive tenant.');
+                }
+            });
+        }
     </script>
 }

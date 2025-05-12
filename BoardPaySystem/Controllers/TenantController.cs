@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using BoardPaySystem.Models;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
+using BoardPaySystem.Services;
 
 namespace BoardPaySystem.Controllers
 {
@@ -16,11 +17,16 @@ namespace BoardPaySystem.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly INotificationService _notificationService;
 
-        public TenantController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public TenantController(
+            ApplicationDbContext context, 
+            UserManager<ApplicationUser> userManager,
+            INotificationService notificationService)
         {
             _context = context;
             _userManager = userManager;
+            _notificationService = notificationService;
         }
 
         // GET: Tenant Dashboard (redirect to Bills)
@@ -35,7 +41,7 @@ namespace BoardPaySystem.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             
             var bills = await _context.Bills
-                .Where(b => b.TenantId == userId)
+                .Where(b => b.TenantId == userId && b.IsApproved)
                 .OrderByDescending(b => b.BillingDate)
                 .ToListAsync();
 
@@ -106,10 +112,10 @@ namespace BoardPaySystem.Controllers
         public async Task<IActionResult> Payment(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var bill = await _context.Bills.FirstOrDefaultAsync(b => b.BillId == id && b.TenantId == userId);
+            var bill = await _context.Bills.FirstOrDefaultAsync(b => b.BillId == id && b.TenantId == userId && b.IsApproved);
             if (bill == null)
             {
-                TempData["Error"] = "Bill not found.";
+                TempData["Error"] = "Bill not found or not yet approved.";
                 return RedirectToAction("Bills");
             }
             return View(bill);
@@ -219,10 +225,39 @@ namespace BoardPaySystem.Controllers
         }
 
         // GET: Tenant/Notifications
-        public IActionResult Notifications()
+        public async Task<IActionResult> Notifications()
         {
-            // You can load notifications from the database if implemented, or just return the view for now
-            return View();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var notifications = await _notificationService.GetUserNotificationsAsync(userId, includeRead: true);
+            return View(notifications);
+        }
+
+        // POST: Tenant/MarkNotificationAsRead
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarkNotificationAsRead(int id)
+        {
+            await _notificationService.MarkAsReadAsync(id);
+            return RedirectToAction(nameof(Notifications));
+        }
+
+        // POST: Tenant/MarkAllNotificationsAsRead
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarkAllNotificationsAsRead()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            await _notificationService.MarkAllAsReadAsync(userId);
+            return RedirectToAction(nameof(Notifications));
+        }
+
+        // GET: Tenant/GetUnreadNotificationCount
+        [HttpGet]
+        public async Task<IActionResult> GetUnreadNotificationCount()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var count = await _notificationService.GetUnreadCountAsync(userId);
+            return Json(new { count });
         }
     }
 }

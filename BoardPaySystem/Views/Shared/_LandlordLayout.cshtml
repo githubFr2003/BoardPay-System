@@ -21,10 +21,11 @@
                     <li><a asp-action="Overview" asp-controller="Landlord" class="nav-link @(currentAction == "Overview" ? "active" : "")"><i class="fas fa-tachometer-alt"></i> Overview</a></li>
                     <li><a asp-action="ManageBuildings" asp-controller="Landlord" class="nav-link @(currentAction == "ManageBuildings" ? "active" : "")"><i class="fas fa-building"></i> Manage Buildings</a></li>
                     <li><a asp-action="ManageTenants" asp-controller="Landlord" class="nav-link @(currentAction == "ManageTenants" ? "active" : "")"><i class="fas fa-users"></i> Manage Tenants</a></li>
+                    <li><a asp-action="ArchivedTenants" asp-controller="Landlord" class="nav-link @(currentAction == "ArchivedTenants" ? "active" : "")"><i class="fas fa-archive"></i> Archived Tenants</a></li>
                     <li><a asp-action="AddTenant" asp-controller="Landlord" class="nav-link @(currentAction == "AddTenant" ? "active" : "")"><i class="fas fa-user-plus"></i> Add Tenant</a></li>
                     <li><a asp-action="MeterReadings" asp-controller="Landlord" class="nav-link @(currentAction == "MeterReadings" ? "active" : "")"><i class="fas fa-bolt"></i> Meter Readings</a></li>
                     <li><a asp-action="Billing" asp-controller="Landlord" class="nav-link @(isBillingActive ? "active" : "")"><i class="fas fa-file-invoice-dollar"></i> Billing & Payments</a></li>
-                    <li><a asp-action="Reports" asp-controller="Landlord" class="nav-link @(currentAction == "Reports" ? "active" : "")"><i class="fas fa-chart-line"></i> Reports</a></li>
+                    <li><a href="/Landlord/MonthlyIncomeSummary?year=@DateTime.Now.Year" class="nav-link @(currentAction == "Reports" || currentAction == "MonthlyIncomeSummary" || currentAction == "PaymentHistory" ? "active" : "")"><i class="fas fa-chart-line"></i> Reports</a></li>
                     <li><a asp-action="LandlordProfile" asp-controller="Landlord" class="nav-link @(currentAction == "Profile" ? "active" : "")"><i class="fas fa-user-circle"></i> My Profile</a></li>
                 </ul>
             </nav>

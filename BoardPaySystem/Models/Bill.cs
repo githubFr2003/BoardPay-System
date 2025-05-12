@@ -10,7 +10,8 @@ namespace BoardPaySystem.Models
         Pending,    // Payment initiated (via GCash) but not yet approved
         Paid,       // Payment completed and confirmed
         Overdue,    // Payment past due date
-        Cancelled   // Bill cancelled
+        Cancelled,  // Bill cancelled
+        WrittenOff  // Bill written off/forgiven by landlord
     }
 
     public class Bill
@@ -64,6 +65,9 @@ namespace BoardPaySystem.Models
 
         [Required]
         public BillStatus Status { get; set; }
+
+        [Required]
+        public bool IsApproved { get; set; } = false;
 
         public DateTime? PaymentDate { get; set; }
 

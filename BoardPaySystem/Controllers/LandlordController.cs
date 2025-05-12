@@ -77,9 +77,15 @@ namespace BoardPaySystem.Controllers
             return View();
         }
 
-        public async Task<IActionResult> ManageBuildings()
+        public async Task<IActionResult> ManageBuildings(int? buildingId = null)
         {
-            var buildings = await _context.Buildings
+            var allBuildings = await _context.Buildings.ToListAsync();
+            var buildingsQuery = _context.Buildings.AsQueryable();
+            if (buildingId.HasValue)
+            {
+                buildingsQuery = buildingsQuery.Where(b => b.BuildingId == buildingId.Value);
+            }
+            var buildings = await buildingsQuery
                 .Select(b => new BuildingListViewModel
                 {
                     BuildingId = b.BuildingId,
@@ -90,28 +96,73 @@ namespace BoardPaySystem.Controllers
                     OccupiedRooms = b.Floors.Sum(f => f.Rooms.Count(r => r.IsOccupied))
                 })
                 .ToListAsync();
+            ViewBag.AllBuildings = allBuildings;
+            ViewBag.CurrentBuildingId = buildingId;
             return View(buildings);
         }
 
-        public async Task<IActionResult> Billing()
+        public async Task<IActionResult> Billing(string status = "all", string month = "current", string building = "all")
         {
-            // Ensure every tenant has a bill for every month from their start date to now
             await _billingService.BackfillBillsForAllTenantsAsync();
-
-            // Update bill statuses (overdue, etc)
             await _billingService.UpdateBillStatusesAsync();
 
-            // Get all bills with related data
-            var bills = await _context.Bills
+            var billsQuery = _context.Bills
                 .Include(b => b.Tenant)
                 .Include(b => b.Room)
-                .OrderByDescending(b => b.DueDate)
-                .ToListAsync();
+                    .ThenInclude(r => r.Floor)
+                        .ThenInclude(f => f.Building)
+                .AsQueryable();
 
-            // Group bills by tenant
+            // Filter by status
+            if (!string.IsNullOrEmpty(status) && status != "all")
+            {
+                switch (status.ToLower())
+                {
+                    case "notpaid":
+                        billsQuery = billsQuery.Where(b => b.Status == BillStatus.NotPaid);
+                        break;
+                    case "overdue":
+                        billsQuery = billsQuery.Where(b => b.Status == BillStatus.Overdue);
+                        break;
+                    case "paid":
+                        billsQuery = billsQuery.Where(b => b.Status == BillStatus.Paid);
+                        break;
+                    case "writtenoff":
+                        billsQuery = billsQuery.Where(b => b.Status == BillStatus.WrittenOff);
+                        break;
+                }
+            }
+
+            // Filter by month
+            if (!string.IsNullOrEmpty(month) && month != "all")
+            {
+                int filterYear = DateTime.Now.Year;
+                int filterMonth = DateTime.Now.Month;
+                if (month == "current")
+                {
+                    // already set
+                }
+                else if (DateTime.TryParseExact(month + "-01", "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var parsedDate))
+                {
+                    filterYear = parsedDate.Year;
+                    filterMonth = parsedDate.Month;
+                }
+                billsQuery = billsQuery.Where(b => b.BillingYear == filterYear && b.BillingMonth == filterMonth);
+            }
+
+            // Filter by building
+            if (!string.IsNullOrEmpty(building) && building != "all")
+            {
+                if (int.TryParse(building, out int buildingId))
+                {
+                    billsQuery = billsQuery.Where(b => b.Room.Floor.BuildingId == buildingId);
+                }
+            }
+
+            var bills = await billsQuery.OrderByDescending(b => b.DueDate).ToListAsync();
+
             var billsByTenant = bills.GroupBy(b => b.TenantId).ToDictionary(g => g.Key, g => g.ToList());
 
-            // Prepare summary for tenants with multiple unpaid bills
             var tenantsWithMultipleUnpaidBills = new List<ApplicationUser>();
             var tenantsWithOnlyCurrentUnpaidBill = new List<ApplicationUser>();
             var tenantTotalAmountsDue = new Dictionary<string, decimal>();
@@ -120,7 +171,7 @@ namespace BoardPaySystem.Controllers
             foreach (var kvp in billsByTenant)
             {
                 var tenantBills = kvp.Value;
-                var unpaidBills = tenantBills.Where(b => b.Status != BillStatus.Paid && b.Status != BillStatus.Cancelled).ToList();
+                var unpaidBills = tenantBills.Where(b => b.Status != BillStatus.Paid && b.Status != BillStatus.Cancelled && b.Status != BillStatus.WrittenOff).ToList();
                 var tenant = tenantBills.First().Tenant;
                 if (unpaidBills.Count > 1)
                 {
@@ -137,6 +188,11 @@ namespace BoardPaySystem.Controllers
                 }
             }
 
+            var buildings = await _context.Buildings.ToListAsync();
+            ViewBag.Buildings = buildings;
+            ViewBag.CurrentStatus = status;
+            ViewBag.CurrentMonth = month;
+            ViewBag.CurrentBuilding = building;
             ViewBag.TenantsWithMultipleUnpaidBills = tenantsWithMultipleUnpaidBills;
             ViewBag.TenantsWithOnlyCurrentUnpaidBill = tenantsWithOnlyCurrentUnpaidBill;
             ViewBag.BillsByTenant = billsByTenant;
@@ -253,22 +309,23 @@ namespace BoardPaySystem.Controllers
             }
         }
 
-        public async Task<IActionResult> ManageTenants()
+        public async Task<IActionResult> ManageTenants(int? buildingId = null)
         {
             try
             {
-                // Get all users with the 'Tenant' role
                 var tenantUsers = await _userManager.GetUsersInRoleAsync("Tenant");
-                var tenantIds = tenantUsers.Select(t => t.Id).ToList();
-                // Query the users with those IDs and include related data
-                var tenantsWithDetails = await _context.Users
+                var tenantIds = tenantUsers.Where(t => !t.IsArchived).Select(t => t.Id).ToList();
+                var tenantsWithDetailsQuery = _context.Users
                     .Where(u => tenantIds.Contains(u.Id))
                     .Include(u => u.CurrentRoom)
                     .ThenInclude(r => r.Floor)
                     .ThenInclude(f => f.Building)
-                    .ToListAsync();
-
-                // Find tenants missing meter readings for the current month
+                    .AsQueryable();
+                if (buildingId.HasValue)
+                {
+                    tenantsWithDetailsQuery = tenantsWithDetailsQuery.Where(t => t.BuildingId == buildingId.Value);
+                }
+                var tenantsWithDetails = await tenantsWithDetailsQuery.ToListAsync();
                 var now = DateTime.Now;
                 var firstDayOfMonth = new DateTime(now.Year, now.Month, 1);
                 var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
@@ -276,6 +333,9 @@ namespace BoardPaySystem.Controllers
                     .Where(t => t.CurrentRoom != null && !_context.MeterReadings.Any(m => m.TenantId == t.Id && m.ReadingDate >= firstDayOfMonth && m.ReadingDate <= lastDayOfMonth))
                     .Select(t => new { TenantName = t.FirstName + " " + t.LastName, RoomNumber = t.CurrentRoom.RoomNumber })
                     .ToList();
+                var buildings = await _context.Buildings.ToListAsync();
+                ViewBag.Buildings = buildings;
+                ViewBag.CurrentBuildingId = buildingId;
                 ViewBag.MissingReadings = tenantsWithMissingReadings;
                 return View(tenantsWithDetails);
             }
@@ -285,6 +345,45 @@ namespace BoardPaySystem.Controllers
                 TempData["Error"] = "An error occurred while loading tenants. Please try again.";
                 return RedirectToAction("Index");
             }
+        }
+
+        // Archive a tenant (set IsArchived = true)
+        [HttpPost]
+        public async Task<IActionResult> ArchiveTenant(string id)
+        {
+            var tenant = await _userManager.FindByIdAsync(id);
+            if (tenant == null)
+                return Json(new { success = false, message = "Tenant not found." });
+
+            // Unassign tenant from room and building, and mark room as vacant
+            if (tenant.RoomId.HasValue)
+            {
+                var room = await _context.Rooms.Include(r => r.CurrentTenant).FirstOrDefaultAsync(r => r.RoomId == tenant.RoomId.Value);
+                if (room != null)
+                {
+                    room.IsOccupied = false;
+                    room.CurrentTenant = null;
+                    _context.Update(room);
+                }
+                tenant.RoomId = null;
+            }
+            tenant.BuildingId = null;
+            tenant.IsArchived = true;
+            await _userManager.UpdateAsync(tenant);
+            await _context.SaveChangesAsync();
+            return Json(new { success = true });
+        }
+
+        // Restore a tenant (set IsArchived = false)
+        [HttpPost]
+        public async Task<IActionResult> RestoreTenant(string id)
+        {
+            var tenant = await _userManager.FindByIdAsync(id);
+            if (tenant == null)
+                return Json(new { success = false, message = "Tenant not found." });
+            tenant.IsArchived = false;
+            await _userManager.UpdateAsync(tenant);
+            return Json(new { success = true });
         }
 
         [HttpPost]
@@ -1108,7 +1207,7 @@ namespace BoardPaySystem.Controllers
                 
                 // Calculate total amount due and unpaid months
                 var unpaidBills = bills
-                    .Where(b => b.Status != BillStatus.Paid && b.Status != BillStatus.Cancelled)
+                    .Where(b => b.Status != BillStatus.Paid && b.Status != BillStatus.Cancelled && b.Status != BillStatus.WrittenOff)
                     .ToList();
                 
                 decimal totalDue = unpaidBills.Sum(b => b.TotalAmount);
@@ -1299,7 +1398,7 @@ namespace BoardPaySystem.Controllers
             var today = DateTime.Today;
             var bills = await _context.Bills
                 .Include(b => b.Room)
-                .Where(b => b.TenantId == id && b.Status != BillStatus.Paid && b.Status != BillStatus.Cancelled)
+                .Where(b => b.TenantId == id && b.Status != BillStatus.Paid && b.Status != BillStatus.Cancelled && b.Status != BillStatus.WrittenOff)
                 .OrderByDescending(b => b.BillingYear)
                 .ThenByDescending(b => b.BillingMonth)
                 .ToListAsync();
@@ -1402,6 +1501,190 @@ namespace BoardPaySystem.Controllers
             // Generate new bill for new room
             await _billingService.GenerateInitialBillForTenantAsync(tenant.Id);
             return Json(new { success = true, message = "Tenant moved and new bill generated." });
+        }
+
+        public async Task<IActionResult> MonthlyIncomeSummary(int year, int? buildingId)
+        {
+            var billsQuery = _context.Bills
+                .Where(b => b.BillingYear == year);
+
+            if (buildingId.HasValue)
+                billsQuery = billsQuery.Where(b => b.Room.Floor.BuildingId == buildingId.Value);
+
+            // Load into memory first so we can use computed properties
+            var billList = await billsQuery.ToListAsync();
+
+            var grouped = billList
+                .GroupBy(b => b.BillingMonth)
+                .Select(g => new MonthlyIncomeRow
+                {
+                    Year = year,
+                    Month = g.Key,
+                    Billed = g.Sum(b => b.TotalAmount),
+                    Collected = g.Where(b => b.Status == BillStatus.Paid).Sum(b => b.TotalAmount),
+                    Outstanding = g.Where(b => b.Status != BillStatus.Paid && b.Status != BillStatus.WrittenOff).Sum(b => b.TotalAmount),
+                    Overdue = g.Where(b => b.Status == BillStatus.Overdue).Sum(b => b.TotalAmount),
+                    WrittenOff = g.Where(b => b.Status == BillStatus.WrittenOff).Sum(b => b.TotalAmount)
+                })
+                .OrderBy(r => r.Month)
+                .ToList();
+
+            var totalWrittenOff = grouped.Sum(r => r.WrittenOff);
+            var totalCollected = grouped.Sum(r => r.Collected);
+            var totalIncome = totalCollected;
+
+            var vm = new MonthlyIncomeSummaryViewModel
+            {
+                Rows = grouped,
+                TotalBilled = grouped.Sum(r => r.Billed),
+                TotalCollected = totalCollected,
+                TotalOutstanding = grouped.Sum(r => r.Outstanding),
+                TotalOverdue = grouped.Sum(r => r.Overdue),
+                TotalWrittenOff = totalWrittenOff,
+                TotalIncome = totalIncome,
+                Year = year,
+                BuildingId = buildingId
+            };
+
+            return View(vm);
+        }
+
+        public async Task<IActionResult> PaymentHistory(int? year, int? buildingId, string? tenantId)
+        {
+            var paymentsQuery = _context.Payments
+                .Include(p => p.Bill)
+                    .ThenInclude(b => b.Tenant)
+                .Include(p => p.Bill)
+                    .ThenInclude(b => b.Room)
+                        .ThenInclude(r => r.Floor)
+                            .ThenInclude(f => f.Building)
+                .AsQueryable();
+
+            if (year.HasValue)
+                paymentsQuery = paymentsQuery.Where(p => p.PaymentDate.Year == year.Value);
+            if (buildingId.HasValue)
+                paymentsQuery = paymentsQuery.Where(p => p.Bill.Room.Floor.BuildingId == buildingId.Value);
+            if (!string.IsNullOrEmpty(tenantId))
+                paymentsQuery = paymentsQuery.Where(p => p.Bill.TenantId == tenantId);
+
+            var payments = await paymentsQuery
+                .OrderByDescending(p => p.PaymentDate)
+                .ToListAsync();
+
+            var paymentRows = payments.Select(p => new PaymentHistoryRow
+            {
+                PaymentDate = p.PaymentDate,
+                TenantName = p.Bill?.Tenant != null ? p.Bill.Tenant.FirstName + " " + p.Bill.Tenant.LastName : "",
+                RoomName = p.Bill?.Room != null ? $"{p.Bill.Room.Floor?.Building?.BuildingName ?? ""} - {p.Bill.Room.RoomNumber}" : "",
+                Amount = p.Amount,
+                PaymentMethod = p.PaymentMethod ?? "",
+                ReferenceNumber = p.ReferenceNumber ?? "",
+                BillPeriod = p.Bill != null ? $"{System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(p.Bill.BillingMonth)} {p.Bill.BillingYear}" : "",
+                Status = p.Bill?.Status.ToString() ?? ""
+            }).ToList();
+
+            var buildings = await _context.Buildings.ToListAsync();
+            var tenants = await _context.Users
+                .Where(u => u.RoomId != null)
+                .ToListAsync();
+
+            var vm = new PaymentHistoryViewModel
+            {
+                Payments = paymentRows,
+                Year = year,
+                BuildingId = buildingId,
+                TenantId = tenantId,
+                Buildings = buildings,
+                Tenants = tenants
+            };
+
+            return View(vm);
+        }
+
+        public async Task<IActionResult> BillHistory(string? tenantId)
+        {
+            var tenants = await _context.Users
+                .Where(u => u.RoomId != null)
+                .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
+                .ToListAsync();
+
+            var vm = new BillHistoryViewModel
+            {
+                TenantId = tenantId,
+                Tenants = tenants,
+                Bills = new List<BillHistoryRow>()
+            };
+
+            if (!string.IsNullOrEmpty(tenantId))
+            {
+                var bills = await _context.Bills
+                    .Where(b => b.TenantId == tenantId)
+                    .OrderByDescending(b => b.BillingYear)
+                    .ThenByDescending(b => b.BillingMonth)
+                    .ToListAsync();
+
+                vm.Bills = bills.Select(b => new BillHistoryRow
+                {
+                    BillingPeriod = $"{System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(b.BillingMonth)} {b.BillingYear}",
+                    DueDate = b.DueDate,
+                    Rent = b.MonthlyRent,
+                    Water = b.WaterFee,
+                    Electricity = b.ElectricityFee,
+                    Wifi = b.WifiFee,
+                    LateFee = b.LateFee ?? 0,
+                    Total = b.TotalAmount,
+                    Status = b.Status.ToString(),
+                    PaymentDate = b.PaymentDate,
+                    Reference = b.PaymentReference,
+                    Notes = b.Notes
+                }).ToList();
+            }
+
+            return View(vm);
+        }
+
+        public async Task<IActionResult> ArchivedTenants()
+        {
+            var tenantUsers = await _userManager.GetUsersInRoleAsync("Tenant");
+            var archivedTenantIds = tenantUsers.Where(t => t.IsArchived).Select(t => t.Id).ToList();
+            var archivedTenants = await _context.Users
+                .Where(u => archivedTenantIds.Contains(u.Id))
+                .Include(u => u.CurrentRoom)
+                .ThenInclude(r => r.Floor)
+                .ThenInclude(f => f.Building)
+                .ToListAsync();
+            return View(archivedTenants);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> WriteOffTenantBills(string id)
+        {
+            var bills = await _context.Bills
+                .Where(b => b.TenantId == id && (b.Status == BillStatus.NotPaid || b.Status == BillStatus.Pending || b.Status == BillStatus.Overdue))
+                .ToListAsync();
+            if (!bills.Any())
+                return Json(new { success = false, message = "No unpaid bills to write off." });
+            foreach (var bill in bills)
+            {
+                bill.Status = BillStatus.WrittenOff;
+                bill.Notes = (bill.Notes ?? "") + "\nWritten off by landlord on " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            }
+            await _context.SaveChangesAsync();
+            return Json(new { success = true });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CheckUnpaidBills(string tenantId)
+        {
+            var bills = await _context.Bills
+                .Where(b => b.TenantId == tenantId && (b.Status == BillStatus.NotPaid || b.Status == BillStatus.Pending || b.Status == BillStatus.Overdue))
+                .ToListAsync();
+            if (!bills.Any())
+                return Json(new { hasUnpaid = false });
+            var total = bills.Sum(b => b.TotalAmount);
+            var periods = bills.Select(b => b.BillingPeriod).ToList();
+            return Json(new { hasUnpaid = true, total, periods });
         }
     }
 }

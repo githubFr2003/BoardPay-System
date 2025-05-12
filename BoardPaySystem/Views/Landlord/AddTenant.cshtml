@@ -21,7 +21,12 @@
 
             <div class="form-group">
                 <label asp-for="Password">Password</label>
-                <input asp-for="Password" class="form-control" type="password" required />
+                <div style="position:relative;">
+                    <input asp-for="Password" class="form-control" type="password" required id="passwordInput" />
+                    <span class="toggle-password" onclick="togglePasswordVisibility()" style="position:absolute;top:50%;right:12px;transform:translateY(-50%);cursor:pointer;">
+                        <i id="passwordEye" class="fa fa-eye"></i>
+                    </span>
+                </div>
                 <span asp-validation-for="Password" class="text-danger"></span>
             </div>
 
@@ -202,6 +207,20 @@
                     }
                 }
             });
+
+            function togglePasswordVisibility() {
+                var input = document.getElementById('passwordInput');
+                var eye = document.getElementById('passwordEye');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    eye.classList.remove('fa-eye');
+                    eye.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    eye.classList.remove('fa-eye-slash');
+                    eye.classList.add('fa-eye');
+                }
+            }
         });
     </script>
 }

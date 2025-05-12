@@ -39,6 +39,9 @@ namespace BoardPaySystem.Models
             set { /* Setter provided for backward compatibility */ }
         }
 
+        // Indicates if the tenant is archived (left the property)
+        public bool IsArchived { get; set; } = false;
+
         // Navigation properties
         public virtual Building? Building { get; set; }
         public virtual Room? CurrentRoom { get; set; }
